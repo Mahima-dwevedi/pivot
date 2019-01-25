@@ -1,0 +1,140 @@
+10
+
+dir
+603
+http://star.vinove.com/svn/pivot_new/system/branches/development/src/site/frontend/web/js/plugins/ckeditor/plugins
+http://star.vinove.com/svn/pivot_new
+
+
+
+2015-05-26T06:41:36.186236Z
+2
+priyanka.kumari
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+72295b2a-fd81-4ad8-bf38-c03f813fca44
+
+fakeobjects
+dir
+
+find
+dir
+
+preview
+dir
+
+pagebreak
+dir
+
+div
+dir
+
+image
+dir
+
+scayt
+dir
+
+a11yhelp
+dir
+
+forms
+dir
+
+table
+dir
+
+magicline
+dir
+
+wsc
+dir
+
+pastefromword
+dir
+
+liststyle
+dir
+
+flash
+dir
+
+link
+dir
+
+colordialog
+dir
+
+templates
+dir
+
+icons.png
+file
+
+
+
+
+2015-05-28T06:41:21.000000Z
+bbcb8bc796a8053cc37871010bf6dda4
+2015-05-26T06:41:36.186236Z
+2
+priyanka.kumari
+has-props
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+20881
+
+dialog
+dir
+
+clipboard
+dir
+
+smiley
+dir
+
+iframe
+dir
+
+tabletools
+dir
+
+about
+dir
+
+showblocks
+dir
+
+specialchar
+dir
+

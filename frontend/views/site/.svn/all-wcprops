@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site
+END
+error.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/error.php
+END
+about.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/about.php
+END
+view.php
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/view.php
+END
+contact.php
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/contact.php
+END
+requestPasswordResetToken.php
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/requestPasswordResetToken.php
+END
+faqsearchajax.php
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/faqsearchajax.php
+END
+popup.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/popup.php
+END
+resetPassword.php
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/resetPassword.php
+END
+signup.php
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/signup.php
+END
+faq.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/faq.php
+END
+index.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/index.php
+END
+login.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/views/site/login.php
+END

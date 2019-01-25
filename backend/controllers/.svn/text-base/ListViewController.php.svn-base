@@ -1,0 +1,143 @@
+<?php
+
+namespace backend\controllers;
+
+namespace backend\controllers;
+
+use Yii;
+use yii\web\Controller;
+use backend\models\Field;
+use backend\models\Equipment;
+use backend\models\EquipmentMeta;
+
+class ListViewController extends \yii\web\Controller {
+
+    public function actionIndex($ID = '') {
+
+        $pivotSummary = new \backend\models\PivotSummary;
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $model = new Field();
+            $allField = $model->getEquipmentField();
+            $allEquipment = array();
+            $id = Yii::$app->user->id;
+            $parentid = Yii::$app->user->identity->fkUserID;
+
+            if (!empty($_GET['ID'])) {
+                $fieldID = Yii::$app->request->get('ID');
+                $conn = \Yii::$app->db;
+                $query = "SELECT `tbl_device`.DeviceSerialNo,tbl_irrigation.irrigationName,tbl_field.fieldName,`tbl_equipment`.*"
+                        . " FROM `tbl_equipment` "
+                        . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                        . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                        . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                        . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID` "
+                        . " WHERE `tbl_equipment`.`fkFieldID`=:fieldID group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+                $allEquipment = $conn->createCommand($query)->bindValue(":fieldID", $fieldID)->queryAll();
+
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    //get Last pressure
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                }
+//                echo "<pre>";print_r($allEquipment);
+            } else {
+                $allEquipment = Field::getListField();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                }
+            }
+//             echo "<pre>";print_r($allEquipment);die();
+            $this->layout = 'mainsubadmin';
+            return $this->render('index', [
+                        'model' => $allField, 'allEquipment' => $allEquipment,
+            ]);
+        } elseif (Yii::$app->user->identity->user_type == 'field-admin') {
+
+            $model = new Field();
+            $allField = $model->getAssignedfieldtech();
+            $allEquipment = array();
+            if (!empty($_GET['ID'])) {
+                $fieldID = Yii::$app->request->get('ID');
+                $conn = \Yii::$app->db;
+                $query = "SELECT `tbl_device`.DeviceSerialNo,tbl_irrigation.irrigationName,tbl_field.fieldName,`tbl_equipment`.*"
+                        . " FROM `tbl_equipment` "
+                        . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                        . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                        . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                        . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID` "
+                        . " WHERE `tbl_equipment`.`fkFieldID`=:fieldID group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+                $allEquipment = $conn->createCommand($query)->bindValue(":fieldID", $fieldID)->queryAll();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                }
+            } else {
+                $allEquipment = Field::getTechnicianField();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                }
+            }
+
+            $this->layout = 'mainfieldadmin';
+            return $this->render('index', [
+                        'model' => $allField, 'allEquipment' => $allEquipment,
+            ]);
+        }
+    }
+
+    public function actionStopEquip($id) {
+        Equipment::stopEqipment($id);
+        $this->redirect(['/list-view']);
+    }
+
+}

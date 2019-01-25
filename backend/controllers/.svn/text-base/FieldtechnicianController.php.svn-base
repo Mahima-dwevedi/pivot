@@ -1,0 +1,207 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use backend\models\Fieldtechnician;
+use app\models\Admin;
+use yii\web\Controller;
+use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
+use backend\models\Farm;
+
+//use app\models\Admin;
+
+class FieldtechnicianController extends \yii\web\Controller {
+
+    public function actionIndex() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $searchModel = new Fieldtechnician();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            $this->layout = 'mainsubadmin';
+
+            return $this->render('index', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+            ]);
+        }
+    }
+
+    public function actionCreate() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $model = new Fieldtechnician();
+            $model->scenario = 'create';
+            $modelAdmin = new Admin();
+            $modelAdmin->scenario = 'createfield';
+            $modelAdmin->created_at = date('Y-m-d H:i:s');
+            $model->technicianAddDate = date('Y-m-d H:i:s');
+            $modelAdmin->user_type = 'field-admin';
+            $model->load(Yii::$app->request->post());
+            if ($modelAdmin->load(Yii::$app->request->post()) && $modelAdmin->validate()) {
+
+                $IsUniqueFieldtech = $model->checkUniqueTechnician($model->FeildtechName);
+                if ($IsUniqueFieldtech) {
+                    $this->layout = 'mainsubadmin';
+                    Yii::$app->session->setFlash('unique', 'Technician name already exists.');
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelAdmin' => $modelAdmin,
+                    ]);
+                }
+                $password = $modelAdmin->password;
+                $modelAdmin->user_type = 'field-admin';
+                $modelAdmin->password_hash = Yii::$app->security->generatePasswordHash($_POST['Admin']['password']);
+
+
+                if ($model->validate()) {
+
+                    if ($modelAdmin->save()) {
+                        $primarykey = $modelAdmin->pkAdminID;
+                        $modelAdmin->fkUserID = Yii::$app->user->id;
+                        $modelAdmin->save();
+                    }
+                    $model->technicianAddDate = date('Y-m-d H:i:s');
+                    $model->fkAdminID = $primarykey;
+                    //Condition for farm account admin level at creation of Field Technician
+
+                    if (Yii::$app->user->identity->Adminlevel == '0') {
+                        $model->fkParentID = Yii::$app->user->id;
+                    } else {
+                        $model->fkParentID = Yii::$app->user->identity->fkUserID;
+                    }
+
+                    if ($model->save()) {
+
+                        $modelAdmin->Name = $model->FeildtechName;
+                        $modelAdmin->save();
+
+                        \common\models\Mail::sendMail($modelAdmin, $password);
+                        Yii::$app->session->setFlash('createfield', true);
+                        $this->layout = 'mainsubadmin';
+                        return $this->redirect(['farm/manage']);
+                    }
+                } else {
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelAdmin' => $modelAdmin,
+                    ]);
+                }
+            } else {
+                $this->layout = 'mainsubadmin';
+                return $this->render('create', [
+                            'model' => $model,
+                            'modelAdmin' => $modelAdmin,
+                ]);
+            }
+        }
+    }
+
+    public function actionView($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $this->layout = 'mainsubadmin';
+            return $this->render('view', [
+                        'model' => $this->findModel($id),
+            ]);
+        } else {
+            echo 'hello';
+            die;
+        }
+    }
+
+    protected function findModel($id) {
+
+        if (($model = Fieldtechnician::find()->where(['fkAdminID' => $id])->one()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    /**
+     *  Update  Farm model as well as admin model.
+     * If updation  is successful, the browser will be redirected to the 'view' page.
+     * @return mixed
+     */
+    public function actionUpdate($id) {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+       
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $model = $this->findModel($id);
+            $adminID = $model->fkAdminID;
+            $modelAdmin = Admin::findOne(['pkAdminID' => $adminID]);
+            $modelAdmin->scenario = 'updatefield';
+            $modelAdmin->scenario = 'updatefarm';
+            $model->load(Yii::$app->request->post());
+            if (isset($_POST['Admin']['password']) && $_POST['Admin']['password'] != '') {
+
+                $modelAdmin->password_hash = Yii::$app->security->generatePasswordHash($_POST['Admin']['password']);
+            }
+            if ($modelAdmin->load(Yii::$app->request->post()) && $modelAdmin->validate()) {
+               
+                $IsUniqueFieldtech = $model->checkUniqueTechnicianupdate($model->pkTechnicianID, $model->FeildtechName); // print_r($IsUniqueFieldtech); die;
+                if ($IsUniqueFieldtech) {
+                    $this->layout = 'mainsubadmin';
+                    Yii::$app->session->setFlash('unique', 'Technician name already exists.');
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelAdmin' => $modelAdmin,
+                    ]);
+                }
+                
+                $modelAdmin->updated_at = date('Y-m-d H:i:s');
+                $modelAdmin->Name = $_POST['Fieldtechnician']['FeildtechName'];
+                $modelAdmin->save();
+                $model->FeildtechName = $_POST['Fieldtechnician']['FeildtechName'];
+                if ($model->save()) {
+                    if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+                        
+                    } else {
+                        return $this->render('updatetechnician', [
+                                    'model' => $model,
+                                    'modelAdmin' => $modelAdmin,
+                        ]);
+                    }
+                    
+                    if ($model->save()) { 
+                        Yii::$app->session->setFlash('update', true);
+                        return $this->redirect(['farm/manage']);
+                    }
+                } else {
+
+                    return $this->render('updatetechnician', [
+                                'model' => $model,
+                                'modelAdmin' => $modelAdmin,
+                    ]);
+                }
+            }
+            else {
+                return $this->render('updatetechnician', [
+                            'model' => $model,
+                            'modelAdmin' => $modelAdmin,
+                ]);
+            }
+        }
+    }
+
+    protected function findModelfarm($id) {
+
+        if (($model = Farm::find()->where(['fkAdminID' => $id])->one()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+}

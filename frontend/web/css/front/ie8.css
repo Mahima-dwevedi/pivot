@@ -1,0 +1,7 @@
+input{line-height:34px;}
+.contact li input.country_code, .contact li input.phone_no{line-height:34px;}
+
+.fileUpload{width:82px;}
+.tab_body input#uploadFile,.tab_body input#uploadFile1,.form_right input#uploadFile{line-height:34px;}
+.date_range input{line-height:36px;}
+.employer_contact ul li input[type="text"]{line-height:32px;}

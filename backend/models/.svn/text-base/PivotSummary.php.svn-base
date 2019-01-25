@@ -1,0 +1,258 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+
+/**
+ * Description of PivotSummary
+ *
+ * @author vinove
+ */
+class PivotSummary {
+
+    //$id: equipmentid for summary details
+    public function getSummary($id) {
+        $conn = \Yii::$app->db;
+        $query = "select * from(SELECT `tbl_device`.DeviceSerialNo,pivotTracker.pivotRawCheckIn.pivotHeading,pivotTracker.pivotRawCheckIn.signalStrength,"
+                . " pivotTracker.pivotRawCheckIn.timestamp as pivot_last_report_time,pivotTracker.pivotRawCheckIn.pressure,"
+                . " EquipmentMeta.*,tbl_irrigation.irrigationName,`tbl_equipment`.*,pivotTracker.pivotRawCheckIn.My,pivotTracker.pivotRawCheckIn.Mz"
+                . " FROM `tbl_equipment` "
+                . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                . " LEFT JOIN pivotTracker.pivotStartup on pivotTracker.pivotStartup.simNumber=`tbl_device`.DeviceSerialNo"
+                . " LEFT JOIN pivotTracker.pivotRawCheckIn on pivotTracker.pivotStartup.simNumber=pivotTracker.pivotRawCheckIn.simNumber"
+                . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID`"
+                . " WHERE `tbl_equipment`.pkEquipmentID=$id order by EquipmentMeta.id desc) test"
+                . " group by test.fkEquipmentID";
+        $model = $conn->createCommand($query)->queryOne();
+        return $model;
+    }
+
+    public function getCheckIn($id) {
+        $conn = \Yii::$app->db;
+        $query = "SELECT * FROM pivotTracker.pivotRawCheckIn WHERE pivotTracker.pivotRawCheckIn.simNumber = '" . $id . "' ORDER BY pivotTracker.pivotRawCheckIn.timestamp DESC";
+        $model = $conn->createCommand($query)->queryOne();
+        return $model;
+    }
+
+    public function getDirection($id) {
+        $model = $this->getLast($id);
+        if ($model) {
+            $model = $model[0]['pivotHeading'] - $model[1]['pivotHeading'];
+            if ($model != '0') {
+                $model = $model >= 0 ? "Forward" : "Reverse";
+            } else {
+                $model = "N/A";
+            }
+        } else {
+            $model = "N/A";
+        }
+        return $model;
+    }
+
+    public function getAlarmMoveNoPressure($id, $pressure) {
+        if ($pressure == "0") {
+            $model = $this->getLast($id);
+            if ($model) {
+                $model = $model[0]['pivotHeading'] - $model[1]['pivotHeading'];
+                if ($model == "0") {
+                    $model = "No";
+                } else {
+                    $model = "Yes";
+                }
+            } else {
+                $model = "No";
+            }
+        } else {
+            $model = "No";
+        }
+        return $model;
+    }
+
+    public function getAlarmMovePressure($id, $pressure) {
+        if ($pressure == "1") {
+            $model = $this->getLast($id);
+            if ($model) {
+                $model = $model[0]['pivotHeading'] - $model[1]['pivotHeading'];
+                if ($model == 0) {
+                    $model = "Yes";
+                } else {
+                    $model = "No";
+                }
+            } else {
+                $model = "No";
+            }
+        } else {
+            $model = "No";
+        }
+        return $model;
+    }
+
+    public function getSpeed($id) {
+        $model = $this->getLast($id);
+        if ($model) {
+            $degreeDiff = $this->getDegreeDiff($model[0]['pivotHeading'], $model[1]['pivotHeading']);
+            $date1 = strtotime(date('Y-m-d H:i:s', strtotime($model[0]['timestamp'])));
+            $date2 = strtotime(date('Y-m-d H:i:s', strtotime($model[1]['timestamp'])));
+            $dateDiff_s = ($date1 - $date2) / 1000.0;
+            $model = $degreeDiff / $dateDiff_s;
+            $model = ($model * 3600.0) / 1000.0;
+            return round($model, 3) . " kph";
+        } else {
+            $model = "N/A";
+        }
+
+        return $model;
+    }
+
+    public function getDegreeDiff($deg1, $deg2) {
+        $degreeDiff = abs($deg1 - $deg2);
+        if ($degreeDiff > 300) {
+            $diffDegree2 = $degreeDiff - 360;
+        }if ($degreeDiff < 300) {
+            $diffDegree2 = $degreeDiff;
+        }
+        return $diffDegree2;
+    }
+
+    public function getWaterRate($id, $capacity, $acresWater) {
+        $model = $this->getLast($id);
+        if ($model) {
+            $degreeDiff = $this->getDegreeDiff($model[0]['pivotHeading'], $model[1]['pivotHeading']);
+            $rpm = $degreeDiff / 360;
+            $grp = $rpm * $capacity;
+            $model = $grp / (27154 * $acresWater);
+        } else {
+            $model = "N/A";
+        }
+        return $model;
+    }
+
+    public function getNeedCycle($desiredRate, $acresWater, $tankLevel) {
+        if ($desiredRate != null && $tankLevel != null && $acresWater != null) {
+            $x = $desiredRate * $acresWater * 1.2;
+            if ($tankLevel < $x) {
+                $model = "Yes";
+            } else {
+                $model = "No";
+            }
+        } else {
+            $model = "N/A";
+        }
+        return $model;
+    }
+
+    public function getLast($id) {
+        $conn = \Yii::$app->db;
+        $query = "SELECT pivotTracker.pivotRawCheckIn.* FROM pivotTracker.pivotRawCheckIn WHERE pivotTracker.pivotRawCheckIn.simNumber = '" . $id . "' ORDER BY pivotTracker.pivotRawCheckIn.timestamp DESC LIMIT 2";
+        $model = $conn->createCommand($query)->queryAll();
+        return $model;
+    }
+    
+    public function getLastToday($id) {
+        $conn = \Yii::$app->db;
+        $query = "SELECT pivotTracker.pivotRawCheckIn.* FROM pivotTracker.pivotRawCheckIn WHERE pivotTracker.pivotRawCheckIn.simNumber = '" . $id . "' AND DATE(`timestamp`) = DATE(NOW()) ORDER BY pivotTracker.pivotRawCheckIn.timestamp DESC LIMIT 2";
+        $model = $conn->createCommand($query)->queryAll();
+        return $model;
+    }
+
+    public function getLastStopTime($status, $id) {
+        if ($status == '1') {
+            $model = EquipmentMeta::find()->select("ScheduledStopTime")->where("fkEquipmentID='$id' AND PivotStopAction=1 order by id desc")->one();
+
+            if ($model) {
+
+                if ($model->ScheduledStopTime) {
+                    return date('m-d-Y H:i:s', strtotime($model->ScheduledStopTime));
+                } else {
+                    $model = EquipmentMeta::find()->select("updateDate")->where("fkEquipmentID='$id' AND PivotStopAction=0 order by id desc")->one();
+                    if ($model) {
+                        if ($model->updateDate) {
+                            return date('m-d-Y H:i:s', strtotime($model->updateDate));
+                        } else {
+                            return "N/A";
+                        }
+                    } else {
+                        return "N/A";
+                    }
+                }
+            } else {
+                return "N/A";
+            }
+        } else {
+            $model = EquipmentMeta::find()->select("updateDate")->where("fkEquipmentID='$id' AND PivotStopAction=0 order by id desc")->one();
+            if ($model) {
+                if ($model->updateDate) {
+                    return date('m-d-Y H:i:s', strtotime($model->updateDate));
+                } else {
+                    return "N/A";
+                }
+            } else {
+                return "N/A";
+            }
+        }
+    }
+
+    public function calculateHeading($My, $Mz, $min_y, $max_y, $min_z, $max_z) {
+
+        if ($max_y - $min_y != 0 && $max_z - $min_z != 0) {
+            $My1 = (2 * $My - $max_y - $min_y) / ($max_y - $min_y);
+            $Mz1 = (2 * $Mz - $max_z - $min_z) / ($max_z - $min_z);
+
+            $yawAngle = atan2($My1, $Mz1);
+
+            //Convert from Radians to Degrees
+            $yawAngle = rad2deg($yawAngle);
+            return intval($yawAngle + 180) . " &deg";
+        } else {
+            return "N/A";
+        }
+    }
+
+    public function getCalibration($serialNo) {
+        $con = Yii::$app->db;
+        $query = "SELECT MAX( `Mx` ) AS maxX, MIN( `Mx` ) AS minX, MAX( `My` ) AS maxY, MIN( `My` ) AS minY, MAX( `Mz` ) AS maxZ, MIN( `Mz` ) AS minZ FROM pivotTracker.pivotRawCheckIn WHERE pivotTracker.pivotRawCheckIn.simNumber=\"" . $serialNo . "\"";
+        $model = $con->createCommand($query)->queryOne();
+        return $model;
+    }
+
+    public function getIdleDuration($status, $id) {
+
+        if ($status == "0") {
+            $model = EquipmentMeta::find()->select("updateDate")->where("id='$id' AND PivotStopAction='0' order by id desc")->one();
+            if ($model) {
+                $endDate = date("Y-m-d H:i:s");
+                $days = (strtotime($endDate) - strtotime($model['updateDate'])) / (60 * 60 * 24);
+                $days = (int) $days;
+                if ($days > 4) {
+                    $model = "Idle From $days Days";
+                } else {
+                    $model = "N/A";
+                }
+            } else {
+                $model = "N/A";
+            }
+        } else {
+            $model = "N/A";
+        }
+        return $model;
+    }
+
+    public function getAlarmWithNoPressure($eqpStatus, $pressure, $type) {
+        if ($type == 2) {
+            if ($eqpStatus == "1" && $pressure == "0") {
+                $model = "red";
+            } else {
+                $model = "grey";
+            }
+        } else {
+            $model = "N/A";
+        }
+        return $model;
+    }
+
+}
+
+?>

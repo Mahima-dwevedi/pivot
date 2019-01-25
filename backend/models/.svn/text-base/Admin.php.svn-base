@@ -1,0 +1,405 @@
+<?php
+
+namespace app\models;
+
+use Yii;
+use yii\base\NotSupportedException;
+use yii\behaviors\TimestampBehavior;
+use yii\db\ActiveRecord;
+use yii\web\IdentityInterface;
+use yii\data\ActiveDataProvider;
+
+/**
+ * This is the model class for table "tbl_admin".
+ *
+ * @property integer $id
+ * @property string $username
+ * @property string $auth_key
+ * @property string $password_hash
+ * @property string $password_reset_token
+ * @property string $email
+ * @property integer $role
+ * @property integer $status
+ * @property integer $created_at
+ * @property integer $updated_at
+ */
+class Admin extends ActiveRecord implements IdentityInterface {
+
+    const STATUS_DELETED = 0;
+    const STATUS_ACTIVE = 10;
+    const ROLE_USER = 10;
+
+    public $current_password;
+    public $new_password;
+    public $confirm_password;
+    public $confirm_email;
+    public $password;
+    public $user_Type;
+
+    // public $radio;
+    /**
+     * @inheritdoc
+     */
+    public static function tableName() {
+
+        return 'admin';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules() {
+        return [
+            [['username', 'password_hash', 'email'], 'required', 'on' => 'register'],
+            [['username', 'email', 'password'], 'required', 'on' => 'create'],
+            [['email', 'username'], 'unique', 'on' => 'createfarm'],
+            [['email', 'username'], 'unique', 'on' => 'createfield'],
+            [['email', 'username'], 'unique', 'on' => 'updatefarm'],
+            [['email', 'username'], 'unique', 'on' => 'updatefield'],
+            [['username', 'email', 'password', 'phone', 'phone_provider', 'confirm_email', 'user_type'], 'required', 'on' => 'createfarm'],
+            [['username', 'email', 'password', 'phone', 'phone_provider', 'confirm_email', 'user_type'], 'required', 'on' => 'createfield'],
+            [['username', 'email', 'phone', 'updated_at'], 'required', 'on' => 'updatefarm'],
+            [['role', 'status', 'page_setting', 'fkUserID'], 'integer'],
+            [['username', 'password_hash', 'password_reset_token', 'email'], 'string', 'max' => 255],
+            [['auth_key'], 'string', 'max' => 32],
+            [['picture', 'page_setting', 'phone', 'phone_provider', 'AdminLastLogin', 'confirm_email', 'current_password', 'new_password', 'Name', 'Address', 'confirm_password', 'updated_at', 'created_at', 'user_type', 'Address','Adminlevel'], 'safe'],
+            [['current_password', 'new_password', 'confirm_password'], 'required', 'on' => 'changepassword'],
+            [['current_password', 'new_password', 'confirm_password'], 'string', 'min' => 6, 'on' => 'changepassword'],
+            [['password'], 'string', 'min' => 6, 'on' => 'createfarm'],
+            [['confirm_password'], 'compare', 'compareAttribute' => 'new_password', 'message' => 'New password and Confirm passwords don\'t match.', 'on' => 'changepassword'],
+            [['confirm_password'], 'compare', 'compareAttribute' => 'password', 'message' => 'New password and Confirm passwords don\'t match.', 'on' => 'create'],
+            [['username', 'email'], 'required', 'on' => 'editprofile'],
+            [['username'], 'required', 'on' => 'editprofile', 'message' => 'Name cannot be blank'],
+            [['picture'], 'file', 'extensions' => 'gif, jpg, png',],
+            [['confirm_email'], 'compare', 'compareAttribute' => 'email', 'message' => 'email and Confirm email don\'t match.'],
+            [['email', 'confirm_email'], 'email'],
+            [['username', 'email','phone', 'confirm_email'], 'required', 'on' => 'editprofile'],
+            ['phone', 'match', 'pattern' => '^[0-9]{3}-[0-9]{3}-[0-9]{4}$^'],
+        ];
+    }
+
+    /**
+     * Validates the password.
+     * This method serves as the inline validation for password.
+     *
+     * @param string $attribute the attribute currently being validated
+     * @param array $params the additional name-value pairs given in the rule
+     */
+    public function validateStrongPassword($newPassword) {
+
+        if (preg_match('/^[a-zA-Z0-9$!@#%&\.\?]*$/i', $newPassword)) {
+
+            $this->addError('new_password', 'password should contain atleast one number and one special character.');
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels() {
+        return [
+            'pkAdminID' => 'ID',
+            'username' => 'Username',
+            'auth_key' => 'Auth Key',
+            'password_hash' => 'Password Hash',
+            'password_reset_token' => 'Password Reset Token',
+            'email' => 'Email',
+            'role' => 'Role',
+            'status' => 'Status',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+            'AdminLastLogin' => 'Last Login',
+            'phone' => 'Cell Phone Number',
+            'phone_provider' => 'Cell Phone Provider'
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function findIdentity($id) {
+        return static::findOne(['pkAdminID' => $id, 'status' => self::STATUS_ACTIVE]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function findUserType($id) {
+        $model = Admin::findOne($id);
+        return $model;
+    }
+
+    public static function findIdentityByAccessToken($token, $type = null) {
+        throw new NotSupportedException('"findIdentityByAccessToken" is not implemented.');
+    }
+
+    /**
+     * Finds user by username
+     *
+     * @param string $username
+     * @return static|null
+     */
+    public static function findByUsername($username) {
+
+        return static::findOne(['email' => $username, 'status' => self::STATUS_ACTIVE]);
+    }
+
+    /**
+     * Finds user by password reset token
+     *
+     * @param string $token password reset token
+     * @return static|null
+     */
+    public static function findByPasswordResetToken($token) {
+        if (!static::isPasswordResetTokenValid($token)) {
+            return null;
+        }
+
+        return static::findOne([
+                    'password_reset_token' => $token,
+                    'status' => self::STATUS_ACTIVE,
+        ]);
+    }
+
+    /**
+     * Finds out if password reset token is valid
+     *
+     * @param string $token password reset token
+     * @return boolean
+     */
+    public static function isPasswordResetTokenValid($token) {
+        if (empty($token)) {
+            return false;
+        }
+        $expire = Yii::$app->params['user.passwordResetTokenExpire'];
+        $parts = explode('_', $token);
+        $timestamp = (int) end($parts);
+        return $timestamp + $expire >= time();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getId() {
+        return $this->getPrimaryKey();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getAuthKey() {
+        return $this->auth_key;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function validateAuthKey($authKey) {
+        return $this->getAuthKey() === $authKey;
+    }
+
+    /**
+     * Validates password
+     *
+     * @param string $password password to validate
+     * @return boolean if password provided is valid for current user
+     */
+    public function validatePassword($password) {
+        return Yii::$app->security->validatePassword($password, trim($this->password_hash));
+    }
+
+    /**
+      [
+      'header' => 'Action',
+      'class' => 'yii\grid\ActionColumn',
+      'template' => '{view} {update} {deactivate} {activate} ',
+      'buttons' => [
+      'deactivate' => function ($url, $model) {
+      return Html::a('<span class="glyphicon icon-ban-circle my_font_icon"></span>', $url, [
+      'title' => Yii::t('app', 'deactivate'), 'data-pjax' => '0', 'data-confirm' => 'Are you sure you want to deactivate this account?',
+      ]);
+      },
+      'activate' => function ($url, $model) {
+      return Html::a('<span class="glyphicon icon-ok my_font_icon"></span>', $url, [
+      'title' => Yii::t('app', 'activate'), 'data-pjax' => '0', 'data-confirm' => 'Are you sure you want to activate this account?',
+      ]);
+      },
+      'view' => function ($url, $model) {
+      return Html::a('<span class="glyphicon icon-eye-open my_font_icon"></span>', $url, [
+      'title' => Yii::t('app', 'view'), 'data-pjax' => '0',
+      ]);
+      },
+      'update' => function ($url, $model) {
+      return Html::a('<span class="glyphicon icon-pencil my_font_icon"></span>', $url, [
+      'title' => Yii::t('app', 'update'), 'data-pjax' => '0',
+      ]);
+      },
+      ],
+      'urlCreator' => function ($action, $model, $key, $index) {
+      if ($action === 'activate') {
+      $url = Yii::$app->urlManager->createUrl(['farm/activate', 'id' => $model->farmID]);
+      //$url ='../../../view?slug='.$model->slug;
+      return $url;
+      }
+      if ($action === 'deactivate') {
+      $url = Yii::$app->urlManager->createUrl(['farm/deactivate', 'id' => $model->farmID]);
+      //$url ='../../../view?slug='.$model->slug;
+      return $url;
+      }
+      if ($action === 'view') {
+      $url = Yii::$app->urlManager->createUrl(['farm/view', 'id' => $model->farmID]);
+      return $url;
+      }
+      if ($action === 'update') {
+      $url = Yii::$app->urlManager->createUrl(['farm/update', 'id' => $model->farmID]);
+
+      return $url;
+      }
+      }
+      ],
+     * Generates password hash from password and sets it to the model
+     *
+     * @param string $password
+     */
+    public function setPassword($password) {
+
+        $this->password_hash = Yii::$app->security->generatePasswordHash($password);
+    }
+
+    /**
+     * Generates "remember me" authentication key
+     */
+    public function generateAuthKey() {
+        $this->auth_key = Yii::$app->security->generateRandomString();
+    }
+
+    /**
+     * Generates new password reset token
+     */
+    public function generatePasswordResetToken() {
+        $this->password_reset_token = Yii::$app->security->generateRandomString() . '_' . time();
+    }
+
+    /**
+     * Removes password reset token
+     */
+    public function removePasswordResetToken() {
+        $this->password_reset_token = null;
+    }
+
+    public function validateCurrentPassword($id, $curPassword) {
+
+        $password_hash = Yii::$app->security->validatePassword($curPassword, $this->password_hash);
+
+        if ($password_hash != '') {
+            return static::findOne([
+                        'pkAdminID' => $id,
+                        'status' => self::STATUS_ACTIVE,
+                        'password_hash' => $this->password_hash,
+            ]);
+        } else {
+
+            $this->addError('current_password', 'Password is incorrect.');
+        }
+    }
+
+    public function updateAdmintable($arrPost) {
+
+        $model = Admin::findOne(Yii::$app->user->id);
+        $model->password_hash = Yii::$app->security->generatePasswordHash($arrPost['new_password']);
+
+        $model->updated_at = date('Y-m-d G:i:s');
+        return $model->update();
+
+
+        //$model->save();  // equivalent to $model->update();
+        // return $model;
+    }
+
+    /**
+     * Signs user up.
+     *
+     * @return User|null the saved model or null if saving fails
+     */
+    public function search($params) {
+        
+        $id = Yii::$app->user->id;
+        
+         // ALL farm account and technician assigned to parent farm account Date:5-8-2015
+        
+        if(Yii::$app->user->identity->Adminlevel == '0'){
+   
+          
+        $query = Admin::find()->Where(['fkUserID' => $id]);
+        $query->joinWith('farm');
+        $query->joinWith('tech')->orWhere(['fkParentID' =>$id]);
+   
+  }else{
+             
+        $query = Admin::find()->Where(['fkUserID' => $id]);
+        $query->joinWith('farm');
+        $query->joinWith('tech')->orWhere(['fkParentID' =>Yii::$app->user->identity->fkUserID]);
+      
+  }
+        
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'sort' => ['defaultOrder' => ['pkAdminID' => SORT_DESC]],
+            'pagination' => [
+                'pageSize' => 10,
+            ],
+        ]);
+
+        if (@$params['Admin']['Name'] != '') {//die('asf');
+            $query->andFilterWhere(['like', 'farmName', $params['Admin']['Name']]);
+            $query->orFilterWhere(['like', 'FeildtechName', $params['Admin']['Name']]);
+            $query->andFilterWhere(['fkUserID' => $id]);
+            $this->Name = $params['Admin']['Name'];
+        }
+        if (@$params['Admin']['user_type'] != '') {//die('asf');
+           // $query->andFilterWhere(['like', 'farmName', $params['Admin']['Name']]);
+            $query->andFilterWhere(['like', 'user_type', $params['Admin']['user_type']]);
+           
+            $this->user_type = $params['Admin']['user_type'];
+        }
+
+        if (($this->load($params) && $this->validate())) {
+
+            return $dataProvider;
+        }
+
+        $query->andFilterWhere([
+            'user_type' => $this->user_type,
+        ]);
+//        $query->andFilterWhere([
+//            'Name' => $this->Name,
+//        ]);
+
+        return $dataProvider;
+    }
+
+    public function getFarm() {
+        return $this->hasOne(\backend\models\Farm::className(), ['fkAdminID' => 'pkAdminID']);
+    }
+
+    public function getTech() {
+        return $this->hasOne(\backend\models\Fieldtechnician::className(), ['fkAdminID' => 'pkAdminID']);
+    }
+    
+    
+     public function getLastCreatedAccount()
+    {
+//        $id = Yii::$app->user->id;
+//        $query = Admin::find()->Where(['fkUserID' => $id]);
+//        $query->joinWith('farm');
+//        $query->joinWith('tech');
+//        
+////        return $dataProvider;
+//        print_r($dataProvider);die;
+    }
+
+}

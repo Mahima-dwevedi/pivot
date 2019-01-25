@@ -1,0 +1,78 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+
+/**
+ * This is the model class for table "EquipmentMeta".
+ *
+ * @property integer $id
+ * @property integer $fkUserID
+ * @property integer $DesiredRate
+ * @property double $TankLevel
+ * @property string $ServiceRequest
+ * @property string $NotesComents
+ * @property string $AlarmBypass
+ * @property string $FuelRequest
+ * @property integer $StopandSlot
+ * @property string $ScheduledStopTime
+ * @property double $RainGaugeReading
+ * @property double $ProbeMoistureAnalysis
+ * @property double $HandMoistureAnalysis
+ * @property string $startDate
+ * @property string $updateDate
+ * @property string $type
+ */
+class EquipmentMeta extends \yii\db\ActiveRecord
+{
+
+    /**
+     * @inheritdoc
+     */
+    public static function tableName()
+    {
+        return 'EquipmentMeta';
+    }
+    public $type;
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+//            [['ServiceRequest', 'AlarmBypass', 'FuelRequest', 'StopandSlot', 'ScheduledStopTime'], 'required'],
+            [['StopandSlot'], 'integer', 'min' => 0, 'max' => 360],
+            [['ServiceRequest', 'AlarmBypass', 'FuelRequest', 'DesiredRate', 'TankLevel'], 'required'],
+            [['DesiredRate', 'TankLevel'], 'double', 'min' => 0.01],
+            [['ServiceRequest', 'NotesComents', 'AlarmBypass', 'FuelRequest'], 'string'],
+            [['ScheduledStopTime', 'startDate', 'updateDate', 'fkEquipmentID', 'DesiredRate', 'TankLevel', 'NotesComents', 'RainGaugeReading', 'ProbeMoistureAnalysis', 'HandMoistureAnalysis','StopandSlot','type'], 'safe'],
+            [['RainGaugeReading', 'ProbeMoistureAnalysis'], 'number']
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'fkEquipmentID' => 'EquipmentID',
+            'DesiredRate' => 'Desired Rate',
+            'TankLevel' => 'Tank Level',
+            'ServiceRequest' => 'Service Request',
+            'NotesComents' => 'Notes Coments',
+            'AlarmBypass' => 'Alarm Bypass',
+            'FuelRequest' => 'Fuel Request',
+            'StopandSlot' => 'Stop in Slot',
+            'ScheduledStopTime' => 'Scheduled Stop Time',
+            'RainGaugeReading' => 'Rain Gauge Reading',
+            'ProbeMoistureAnalysis' => 'Probe Moisture Analysis',
+            'HandMoistureAnalysis' => 'Hand Moisture Analysis',
+            'startDate' => 'Start Date',
+            'updateDate' => 'Update Date',
+        ];
+    }
+
+}

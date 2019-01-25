@@ -1,0 +1,162 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+use app\models\Admin;
+
+/**
+ * This is the model class for table "tbl_technician".
+ *
+ * @property integer $pkTechnicianID
+ * @property integer $fkAdminID
+ * @property string $technicianAddress2
+ * @property string $technicianAddDate
+ * @property string $technicianUpdateDate
+ */
+class Fieldtechnician extends \yii\db\ActiveRecord {
+
+    /**
+     * @inheritdoc
+     */
+    public $FeildtechNameSearch;
+    public $Fieldtechnician;
+
+    public static function tableName() {
+        return 'tbl_technician';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules() {
+        return [
+            [['technicianAddDate', 'FeildtechName'], 'required'],
+            [['technicianAddDate', 'FeildtechName'], 'required', 'on' => 'create'],
+            [['fkAdminID'], 'integer'],
+        //    ['FeildtechName', 'unique', 'on' => 'create'],
+            [['technicianAddress2'], 'string'],
+            [['technicianAddDate', 'Fieldtechnician', 'technicianAddress2', 'technicianUpdateDate', 'FeildtechNameSearch', 'fkParentID'], 'safe']
+//            [['ConfirmEmail'], 'compare', 'compareAttribute' => 'Email', 'message' => '{attribute} must be equal to {compareAttribute}'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels() {
+        return [
+            'pkTechnicianID' => 'Pk Technician ID',
+            'FeildtechName' => 'Technician Name',
+            'fkAdminID' => 'Fk Admin ID',
+            'technicianAddress2' => 'Technician Address2',
+            'technicianAddDate' => 'Technician Add Date',
+            'technicianUpdateDate' => 'Technician Update Date',
+        ];
+    }
+
+    public function getAdmin() {
+        return $this->hasOne(admin::className(), ['pkAdminID' => 'fkAdminID']);
+    }
+
+    public function search($params) {
+
+        $query = Fieldtechnician::find();
+        if (Yii::$app->user->identity->Adminlevel == '0') { // Condition to check field according to level Date:5-8-2015
+            $query->joinWith('admin')->where(['admin.user_type' => 'field-admin', 'admin.fkUserID' => Yii::$app->user->id])->orWhere(['tbl_technician.fkParentID' => Yii::$app->user->id]);
+        } else {
+            $query->joinWith('admin')->where(['admin.user_type' => 'field-admin', 'admin.fkUserID' => Yii::$app->user->id])->orWhere(['tbl_technician.fkParentID' => Yii::$app->user->identity->fkUserID]);
+        }
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 5,
+            ],
+                // 'sort' => ['attributes' => ['DeviceSerialNo', 'DeviceAddDate', 'DeviceStatus']],
+        ]);
+        if (($this->load($params) && $this->validate())) {
+
+            return $dataProvider;
+        }
+        if (@$params['Fieldtechnician']['FeildtechNameSearch'] != '') {
+            $query->andFilterWhere(['like', 'FeildtechName', $params['Fieldtechnician']['FeildtechNameSearch']]);
+            $this->FeildtechName = $params['Fieldtechnician']['FeildtechNameSearch'];
+        }
+
+        return $dataProvider;
+    }
+
+    /* Find all fields assigned to technician */
+
+    public static function getField($id) {
+        $array = [];
+        $equipment = Yii::$app->db->createCommand("SELECT tbl_field.fieldName from tbl_field inner join Technician_field_relationship on tbl_field.fieldID = Technician_field_relationship.fkFieldID WHERE Technician_field_relationship.fkTechnicianID = $id");
+        $subtech = $equipment->queryAll();
+        foreach ($subtech as $value) {
+            array_push($array, $value['fieldName']);
+        }
+        return implode(",", $array);
+    }
+
+    /* Serach relation least */
+
+    public function getSearchRelationList() {
+        $id = \Yii::$app->user->id;
+        $array = [];
+        $con = Yii::$app->db;
+
+        $query = Fieldtechnician::find();
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $query->joinWith('admin')->where(['admin.user_type' => 'field-admin', 'admin.fkUserID' => Yii::$app->user->id])->orWhere(['tbl_technician.fkParentID' => Yii::$app->user->id]);
+        } else {
+            $query->joinWith('admin')->where(['admin.user_type' => 'field-admin', 'admin.fkUserID' => Yii::$app->user->id])->orWhere(['tbl_technician.fkParentID' => Yii::$app->user->identity->fkUserID]);
+        }
+        $model = $query->all();
+
+        foreach ($model as $value) {
+            array_push($array, $value['FeildtechName']);
+        }
+        return $array;
+    }
+
+    /*     * ********
+     * check for unique FieldTechnician name for given farm account
+     * return true if FieldTechnician exists else, false
+     * 
+     * *********** */
+
+    public function checkUniqueTechnician($name) {
+
+        $id = \Yii::$app->user->id;
+        $parentid=Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $data = Fieldtechnician::find()->where('fkParentID =:id and FeildtechName=:name', [':id' => $id, ':name' => $name])->count();
+        } else {
+            $data = Fieldtechnician::find()->where('fkParentID =:id and FeildtechName=:name', [':id' => $parentid, ':name' => $name])->count();
+        }
+        
+        return $data;
+
+    }
+     /*     * ********
+     * check for unique FieldTechnician name for given farm account
+     * return true if FieldTechnician exists else except on given id, false
+     * 
+     * *********** */
+     public function checkUniqueTechnicianupdate($pktechnicianid, $name) {
+
+        $id = \Yii::$app->user->id;
+        $parentid=Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $data = Fieldtechnician::find()->where('fkParentID =:id and FeildtechName=:name', [':id' => $id, ':name' => $name])->andWhere(['not in','pkTechnicianID',$pktechnicianid])->count();
+        } else {
+            $data = Fieldtechnician::find()->where('fkParentID =:id and FeildtechName=:name', [':id' => $parentid, ':name' => $name])->andWhere(['not in','pkTechnicianID',$pktechnicianid])->count();
+        }
+       // print_r($data); die;
+        return $data;
+
+    }
+
+}

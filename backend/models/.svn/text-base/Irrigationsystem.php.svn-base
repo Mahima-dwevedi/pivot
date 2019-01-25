@@ -1,0 +1,173 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+
+/**
+ * This is the model class for table "tbl_irrigation".
+ *
+ * @property integer $irrigationID
+ * @property string $irrigationName
+ */
+class Irrigationsystem extends \yii\db\ActiveRecord {
+
+    /**
+     * @inheritdoc
+     */
+    public static function tableName() {
+        return 'tbl_irrigation';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules() {
+        return [
+            [['irrigationName'], 'required'],
+            [['irrigationName',],'required','on'=>'create'],
+            [['irrigationName',],'required','on'=>'update'],
+            [['irrigationID'], 'required', 'on' => 'assigndevice', 'message' => 'Please select a Irrigation System'],
+            [['irrigationName'], 'string', 'max' => 255],
+            [['fkFieldID'], 'integer'],
+            [['irrigationName'], 'unique','on'=>'create'],
+             [['irrigationName'], 'unique','on'=>'update'],
+            [['fkFieldID', 'irrigationAddedDate', 'irrigationUpdatedDate', 'fkFarmID', 'fkParentID'], 'safe']
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels() {
+        return [
+            'irrigationID' => 'Irrigation System',
+            'irrigationName' => 'Irrigation Name',
+            'fkFieldID' => 'Field Name',
+            'irrigationAddedDate' => 'Created Date',
+            'irrigationUpdatedDate' => 'Updated Date',
+            'fkFarmID'=>'Farm Name'
+        ];
+    }
+
+    public function search($params) {
+
+
+        $query = Irrigationsystem::find();
+
+        $irrigationdataProvider = new ActiveDataProvider([
+
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 5,
+            ],
+                // 'sort' => ['attributes' => ['DeviceSerialNo', 'DeviceAddDate', 'DeviceStatus']],
+        ]);
+        if (($this->load($params) && $this->validate())) {
+            return $irrigationdataProvider;
+        }
+        return $irrigationdataProvider;
+    }
+
+    /*     * **** Find Assigned Irrigation System to  Field */
+
+    public function findIrrigations($id) {
+
+        $irrigation = Yii::$app->db->createCommand("SELECT i.irrigationName, i.irrigationAddedDate
+         
+          FROM `tbl_irrigation` i, tbl_field f 
+          where f.fieldID=i.fkFieldID and f.fieldID=$id");
+        return $irrigation->queryAll();
+    }
+
+    public function findIrrigationid() {
+        $selectBox = '';
+        $selected = '';
+        $irrigation = Yii::$app->db->createCommand("SELECT * from tbl_irrigation WHERE fkFieldID = 0");
+        $var = $irrigation->queryAll();
+
+        foreach ($var as $key => $value) {
+            // echo '<pre>';print_r($key);die;
+            $selectBox .= '<option value="' . trim($value['irrigationID']) . '"';
+            if (is_array($selected)) {
+                if (in_array($value['irrigationID'], $selected))
+                    $selectBox .= 'selected="selected"';
+            }
+            else if ($selected == $value['irrigationID']) {
+                $selectBox .= '  selected="selected"';
+            }
+            $selectBox .= '>' . trim($value['irrigationName']) . '</option>';
+        }
+        // echo $selectBox;die;
+        return $selectBox;
+    }
+
+    /*     * ********
+     * check for unique irrigation name for given user
+     * return true if irrigation name exists else, false
+     * 
+     * *********** */
+
+    public function checkUniqueIrrigation($id, $name) {
+        $data = Irrigationsystem::find()->where('fkFarmID=:id and irrigationName=:name', [':id' => $id, ':name' => $name])->count();
+        return $data;
+//         print_r($data);die;
+    }
+
+    /*
+     * Get Irrigation Sytem of all those farm account which comes under same parent farm account
+     * Modified date 5-8-15
+     */
+
+    public static function getAllIrrigation() {
+        $id = Yii::$app->user->id;
+        $idlevel1 = Yii::$app->user->identity->fkUserID;
+        $array=["0"=>["irrigationID" => 0, "irrigationName" => "Default Irrigation System"]];
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+
+            $model = Irrigationsystem::find()->select(['irrigationID', 'irrigationName'])->where(['fkFieldID' => "0"])->andWhere("(fkParentID=$id) OR (fkFarmID=$id)")->asArray()->all();
+        } else {
+
+            $model = Irrigationsystem::find()->select(['irrigationID', 'irrigationName'])->where(['fkFieldID' => "0"])->andWhere("(fkParentID=$idlevel1) OR (fkFarmID=$id)")->asArray()->all();
+        }
+        $model=  array_merge($array,$model);
+        
+        $data = \yii\helpers\ArrayHelper::map($model, 'irrigationID', 'irrigationName');
+
+        return $data;
+    }
+
+    public function getField() {
+
+        return $this->hasOne(Field::className(), ['fieldID' => 'fkFieldID']);
+    }
+
+    public function getFieldList() {
+ if (Yii::$app->user->identity->Adminlevel == '0') {
+        $data = Field::find()->select(['fieldID', 'fieldName'])->where(['fieldStatus' => 'Active','fkParentID'=>Yii::$app->user->id])->asArray()->all();
+        
+ }else{
+     
+      $data = Field::find()->select(['fieldID', 'fieldName'])->where(['fieldStatus' => 'Active','fkParentID'=>Yii::$app->user->identity->fkUserID])->asArray()->all();
+       
+ }
+ $list = \yii\helpers\ArrayHelper::map($data, 'fieldID', 'fieldName');
+        if ($list) {
+            return $list;
+        } else {
+            return $list = [];
+        }
+    }
+    
+    public function getFarmList() {
+        $data = Farm::find()->select(['farmID', 'farmName'])->where(['farmStatus' => 'Active'])->asArray()->all();
+        $list = \yii\helpers\ArrayHelper::map($data, 'farmID', 'farmName');
+        if ($list) {
+            return $list;
+        } else {
+            return $list = [];
+        }
+    }
+
+    
+}

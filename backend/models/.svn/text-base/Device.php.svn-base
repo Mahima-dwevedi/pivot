@@ -1,0 +1,159 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+use backend\models\Farm;
+
+/**
+ * This is the model class for table "tbl_device".
+ *
+ * @property integer $pkDeviceID
+ * @property integer $deviceID
+ * @property string $deviceSerialNo
+ * @property string $deviceCellularServiceProvider  
+ * @property string $deviceCellularServicePhone
+ * @property string $deviceSoftwareVersion
+ * @property integer $fkFarmID
+ * @property string $deviceAddDate
+ * @property string $deviceUpdateDate
+ */
+class Device extends \yii\db\ActiveRecord {
+
+    /**
+     * @inheritdoc
+     */
+    public $zipfile;
+    public $radio;
+    public $FormSearch;
+
+    public static function tableName() {
+        return 'tbl_device';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules() {
+        return [
+            [['DeviceSerialNo', 'DeviceCellularServiceProvider', 'DeviceCellularServiceContractDate', 'DeviceCellularServicePhone', 'DeviceSoftwareVersion',], 'required', 'on' => 'create'],
+            [['DeviceSerialNo', 'DeviceCellularServiceContractDate', 'DeviceAddDate', 'DeviceUpdateDate', 'fkFarmID', 'fkFieldID', 'DeviceComment'], 'safe'],
+            [['fkFarmID', 'fkFieldID'], 'integer'],
+            [['pkDeviceID'], 'required', 'on' => 'assigndevice', 'message' => 'Please select a Device'],
+             [['DeviceSerialNo'], 'unique'],
+            ['DeviceCellularServicePhone', 'match', 'pattern' => '^[0-9]{3}-[0-9]{3}-[0-9]{4}$^','on' => 'create'],
+            [['DeviceSerialNo', 'DeviceCellularServiceProvider', 'DeviceCellularServicePhone', 'DeviceStatus', 'DeviceComment'], 'string', 'max' => 255],
+            [['DeviceSoftwareVersion'], 'string', 'max' => 150]
+        ];
+    }
+
+    /*     * ss
+     * @inheritdoc
+     */
+
+    public function attributeLabels() {
+        return [
+            'DeviceID' => 'Device ID',
+            'fkFieldID' => 'Field ID',
+            'DeviceSerialNo' => 'SIM Number of Pivot Monitor',
+            'DeviceCellularServiceProvider' => 'Device Cellular Service Provider',
+            'DeviceCellularServiceContractDate' => 'Device Cellular Service Contract Date',
+            'DeviceCellularServicePhone' => 'Device Cellular Service Phone',
+            'DeviceSoftwareVersion' => 'Device Software Version',
+            'fkFarmID' => 'Fk Farm ID',
+            'DeviceStatus' => 'Device Status',
+            'DeviceComment' => 'Device Comment',
+            'DeviceAddDate' => 'Device Add Date',
+            'DeviceUpdateDate' => 'Device Update Date',
+        ];
+    }
+
+    public function getFarm() {
+
+        return $this->hasOne(Farm::classname(), ['fkAdminID' => 'fkFarmID']);
+    }
+
+    /*
+     * Relation between Super admin and farm account which is create by super admin
+     * 
+     */
+
+    public function getAdmin() {
+        return $this->hasOne(Admin::className(), ['pkAdminID' => 'fkAdminID']);
+    }
+
+    public function search($params) {
+
+        $query = Device::find()->orderBy('pkDeviceID DESC');
+        $query->joinWith('farm');
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 5,
+            ],
+            'sort' => ['attributes' => ['DeviceSerialNo', 'DeviceAddDate', 'DeviceStatus']],
+        ]);
+        if (!($this->load($params) && $this->validate())) {
+
+            return $dataProvider;
+        }
+        if (@$params['Device']['FormSearch'] != '')
+        {
+            $query->andFilterWhere(['like', 'farmName', $params['Device']['FormSearch']]);
+            $this->FormSearch=$params['Device']['FormSearch'];
+        }
+
+        return $dataProvider;
+    }
+
+    public function actionAssignform() {
+        return $this->render('delete');
+        return $this->redirect(['delete-selected']);
+    }
+
+    /*
+     * Function find all farm name which is Created by Super admin
+     */
+
+    public static function getFarmlevel() {
+
+        $query = Farm::find()->select([
+                    'tbl_farm.fkAdminID', 'tbl_farm.farmName', 'admin.Adminlevel'
+                        ]
+                )
+                ->join('LEFT JOIN', 'admin', 'admin.pkAdminID =tbl_farm.fkAdminID')
+                ->join('LEFT JOIN', 'tbl_device', 'tbl_device.fkFarmID =tbl_farm.fkAdminID')->andWhere(['admin.Adminlevel' => '0'])->groupBy('tbl_farm.fkAdminID');
+
+        $command = $query->createCommand();
+         $data = $command->queryAll();
+     
+         if($data){
+         foreach ($data as $value) {
+           $farm[$value['fkAdminID']]=$value['farmName'];
+      
+        }
+       return $farm;
+         }else{
+             $farm=[];
+         }
+
+        
+    }
+    
+    public function getDeviceSearchList(){
+        $con=  \Yii::$app->db;
+         $array = [];
+        $query="select farmName from tbl_farm";
+        $model=$con->createCommand($query)->queryAll();
+        foreach ($model as $value)
+        {
+            array_push($array, $value['farmName']);
+        }
+        return $array;
+    
+    }
+    
+
+}
+

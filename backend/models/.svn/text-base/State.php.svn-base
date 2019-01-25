@@ -1,0 +1,60 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+
+/**
+ * This is the model class for table "state".
+ *
+ * @property integer $pkStateID
+ * @property string $stateAbbrevation
+ * @property integer $fkCountryID
+ * @property string $state
+ *
+ * @property TblField[] $tblFields
+ */
+class State extends \yii\db\ActiveRecord
+{
+    /**
+     * @inheritdoc
+     */
+    public static function tableName()
+    {
+        return 'state';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['fkCountryID', 'state'], 'required'],
+            [['fkCountryID'], 'integer'],
+            [['stateAbbrevation'], 'string', 'max' => 2],
+            [['state'], 'string', 'max' => 22]
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'pkStateID' => 'Pk State ID',
+            'stateAbbrevation' => 'State Abbrevation',
+            'fkCountryID' => 'Fk Country ID',
+            'state' => 'State',
+        ];
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTblFields()
+    {
+        return $this->hasMany(TblField::className(), ['fkStateID' => 'pkStateID']);
+    }
+}

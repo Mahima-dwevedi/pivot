@@ -1,0 +1,66 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\db\Query;
+use yii\data\ActiveDataProvider;
+use yii\base\Model;
+/**
+ * This is the model class for table "import_field_mapping".
+ *
+ * @property integer $import_field_mapping_id
+ * @property string $db_field
+ * @property string $source_field
+ * @property string $status
+ */
+class ImportFieldMapping extends \yii\db\ActiveRecord
+{
+    /**
+     * @inheritdoc
+     */
+    public $source_file;
+    public $name;
+    public static function tableName()
+    {
+        return 'import_field_mapping';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['source_file'], 'required'],
+         [[ 'db_field', 'source_file','source_field','status', 'import_field_mapping_id'], 'safe'],
+           [['source_file'],'file','extensions' => 'csv',],
+            [['db_field', 'source_field'], 'string', 'max' => 251]
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'import_field_mapping_id' => 'Import Field Mapping ID',
+            'db_field' => 'Db Field',
+            'source_field' => 'Source Field',
+            'status' => 'Status',
+        ];
+    }
+    
+    public function getImportFieldMapping() {
+        $connection = \Yii::$app->db;
+        $model = $connection->createCommand('SELECT * FROM import_field_mapping');
+        
+        $result = $model->queryAll(); 
+        $mapping = array();
+        foreach ($result as $row) {  
+            $mapping[$row['db_field']] = $row;
+        }
+        return $mapping;
+    }
+}

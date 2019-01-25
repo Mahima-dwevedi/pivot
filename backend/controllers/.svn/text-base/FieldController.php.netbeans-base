@@ -1,0 +1,763 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use yii\web\Controller;
+use backend\models\Field;
+use backend\models\Device;
+use backend\models\Equipment;
+use backend\models\Irrigationsystem;
+use backend\models\Fieldtechnician;
+use backend\models\TechnicianFieldrelation;
+use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
+use yii\web\IdentityInterface;
+use yii\helpers\ArrayHelper;
+use yii\helpers\BaseJson;
+
+class FieldController extends \yii\web\Controller {
+
+    public function actionIndex() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $searchModel = new Field();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            $this->layout = 'mainsubadmin';
+
+            return $this->render('index', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+            ]);
+        }
+    }
+
+    public function actionViewfield($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $this->layout = 'mainsubadmin';
+            return $this->render('view', [
+                        'model' => $this->findModel($id),
+            ]);
+        }
+    }
+
+    /*     * **** AUTO COMPLETE FIELD THROUGH AJAX IN ASSIGN DEVICE   */
+
+    public function actionTest() {
+        // print_r(Yii::$app->user->id); die;
+        $value = Field::find()
+                        ->where(['fieldID' => $_GET['id']])->one();
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $items['$valueirrigation'] = '';
+        //condition to check level date 5-8-2015
+        $items['field'] = ['id' => $value->fieldID, 'name' => $value->fieldName, 'fieldInputID' => $value->fieldInputID, 'fieldAddDate' => date('m-d-Y', strtotime($value->fieldAddDate))];
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->id])->all();
+        } else {
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->all();
+        }
+        $count = 0;
+        foreach ($valueirrigation as $values) {
+            $items['irrigationData'][$values->irrigationID] = $values->irrigationName;
+            $count++;
+        }
+
+        return $items;
+    }
+
+    /*     * **** AUTO COMPLETE FIELD THROUGH AJAX IN ASSIGN DEVICE   */
+
+    public function actionGetequipmentirrigation() {
+
+        $value = Irrigationsystem::find()
+                        ->where(['irrigationID' => $_GET['id']])->one();
+
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $idw = $_GET['id'];
+        $items['equipmentData'] = '';
+        $parentid = Yii::$app->user->identity->fkUserID;
+        $id = Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+
+            $valueequipment = Equipment::find()->select(['pkEquipmentID', 'EquipmentName'])->where("(fkIrrigationID =$idw) AND (fkDeviceID IS NULL ) AND ((fkParentID=$id) OR (fkFarmID =$id))")->all();
+            $count = 0;
+        } else {
+
+            $valueequipment = Equipment::find()->select(['pkEquipmentID', 'EquipmentName'])->where("(fkIrrigationID =$idw) AND (fkDeviceID IS NULL ) AND ((fkParentID=$parentid) OR (fkFarmID =$id))")->all();
+
+            $count = 0;
+        }
+
+        foreach ($valueequipment as $values) {
+            $items['equipmentData'][$values->pkEquipmentID] = $values->EquipmentName;
+            $count++;
+        }
+
+        return $items;
+    }
+
+    /*     * **** CREATE FIELD FROM FARM ADMIN   */
+
+    public function actionCreate() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $id = \Yii::$app->user->id;
+            $model = new Field();
+            $modelIrrigation = new Irrigationsystem;
+            $modelIrrigation->scenario = 'assigndevice';
+            $model->fkFarmID = $id;
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+                $IsUniqueField = $model->checkUniqueField($model->fieldName); // print_r($IsUniqueField); die;
+                if ($IsUniqueField) {
+                    $this->layout = 'mainsubadmin';
+                    Yii::$app->session->setFlash('unique', 'Field name already exists.');
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelIrrigation' => $modelIrrigation,
+                    ]);
+                }
+
+                if (isset($_POST['Irrigationsystem']['irrigationID'])) {
+                    if ($_POST['Irrigationsystem']['irrigationID'] != '') {
+                        $irrigationid = $_POST['Irrigationsystem']['irrigationID'];
+
+                        foreach ($irrigationid as $id) {
+                            if ($id == '0') {
+                                $irrigationModel = new Irrigationsystem;
+                                $irrigationModel->irrigationAddedDate = date('Y-m-d H:i:s');
+                                $irrigationModel->irrigationName = "Default Irrigation System";
+                                $irrigationModel->fkFarmID = Yii::$app->user->id;
+                                //Condition for farm account admin level at creation of Irrigation System
+
+                                if (Yii::$app->user->identity->Adminlevel == '0') {
+                                    $irrigationModel->fkParentID = Yii::$app->user->id;
+                                } else {
+                                    $irrigationModel->fkParentID = Yii::$app->user->identity->fkUserID;
+                                }
+                                $model->fieldAddDate = date('Y-m-d H:i:s');
+
+                                if (Yii::$app->user->identity->Adminlevel == '0') {
+                                    $model->fkParentID = Yii::$app->user->id;
+                                } else {
+                                    $model->fkParentID = Yii::$app->user->identity->fkUserID;
+                                }
+                                if ($model->save()) {
+                                    $irrigationModel->fkFieldID = $model->fieldID;
+                                    $irrigationModel->save();
+                                }
+                            } else {
+                                $modelupdateIrrigation = $this->findirrigationModel($id);
+                                $model->fieldAddDate = date('Y-m-d H:i:s');
+
+                                //Condition for farm account admin level at creation of Field
+
+                                if (Yii::$app->user->identity->Adminlevel == '0') {
+                                    $model->fkParentID = Yii::$app->user->id;
+                                } else {
+                                    $model->fkParentID = Yii::$app->user->identity->fkUserID;
+                                }
+                                if ($model->save()) {
+                                    $modelupdateIrrigation->fkFieldID = $model->fieldID;
+                                    $modelupdateIrrigation->save();
+                                }
+                            }
+                        }
+                        Yii::$app->session->setFlash('create', true);
+                        $this->layout = 'mainsubadmin';
+                        return $this->redirect(['index']);
+                    }
+                }
+                //Condition for farm account admin level at creation of Field
+
+                if (Yii::$app->user->identity->Adminlevel == '0') {
+                    $model->fkParentID = Yii::$app->user->id;
+                } else {
+                    $model->fkParentID = Yii::$app->user->identity->fkUserID;
+                }
+                $model->fieldAddDate = date('Y-m-d H:i:s');
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('create', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->redirect(['index']);
+                }
+            } else {
+                if ($modelIrrigation->load(Yii::$app->request->post()) && $modelIrrigation->validate()) {
+
+                    $IsUniqueIrrigation = $modelIrrigation->checkUniqueIrrigation($id, $modelIrrigation->irrigationName);
+                    if ($IsUniqueIrrigation) {
+                        $this->layout = 'mainsubadmin';
+                        Yii::$app->session->setFlash('unique', 'Irrigation name already exists.');
+                        $modelIrrigation->irrigationID = 0;
+                        return $this->render('create', [
+                                    'model' => $model,
+                                    'modelIrrigation' => $modelIrrigation,
+                        ]);
+                    }
+                    $modelIrrigation->fkFarmID = $id;
+                    $modelIrrigation->irrigationAddedDate = date('Y-m-d H:i:s');
+                    //Condition for farm account admin level at creation of Irrigation System
+
+                    if (Yii::$app->user->identity->Adminlevel == '0') {
+                        $modelIrrigation->fkParentID = Yii::$app->user->id;
+                    } else {
+                        $modelIrrigation->fkParentID = Yii::$app->user->identity->fkUserID;
+                    }
+                    if ($modelIrrigation->save()) {
+                        Yii::$app->session->setFlash('create', true);
+                        $this->layout = 'mainsubadmin';
+                        return $this->redirect(['create']);
+                    }
+                } else {
+                    $this->layout = 'mainsubadmin';
+                    $modelIrrigation->irrigationID = 0;
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelIrrigation' => $modelIrrigation,
+                    ]);
+                }
+            }
+        }
+    }
+
+    /*     * **** Update FIELD FROM FARM ADMIN   */
+
+    public function actionEdit($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $model = $this->findModel($id);
+
+            $modelIrrigation =new Irrigationsystem;
+
+
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+                $IsUniqueField = $model->checkUniqueFieldupdate($id, $model->fieldName);
+                if ($IsUniqueField) { 
+                    $this->layout = 'mainsubadmin';
+//                    Yii::$app->session->setFlash('unique', 'Field name already exists.');
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelIrrigation' => $modelIrrigation,
+                    ]);
+                }
+                $model->fieldAddDate = date('Y-m-d H:i:s');
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('updatefield', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->redirect(['index']);
+                }
+            } else {
+                $this->layout = 'mainsubadmin';
+                return $this->render('updatefield', [
+                            'model' => $model,
+                            'modelIrrigation' => $modelIrrigation,
+                ]);
+            } 
+        }
+    }
+
+    /**
+     * This action perform multiple delete operation on ajax call
+     */
+    public function actionMultipledelete() {
+        $postArr = Yii::$app->request->post();
+
+        if (count($postArr['id']) > 0) {
+            foreach ($postArr['id'] as $id) {
+                $model = $this->findModel($id);
+                $model->delete();
+            }
+        }
+        Yii::$app->session->setFlash('delete', true);
+        return "Deleted";
+    }
+
+    /* Assign device to field */
+    /* ADD IRRIGATION SYSTEM TO FIELD */
+    /* ADD EQUIPMENT SYSTEM TO FIELD */
+
+    public function actionAssigndevice() {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $model = new Field();
+            $modelIrrigation = new Irrigationsystem();
+            $modelEquipment = new Equipment();
+            $modelDevice = new Device();
+            $model->scenario = 'assigndevice';
+            $modelIrrigation->scenario = 'assigndevice';
+            $modelEquipment->scenario = 'assigndevice';
+            $modelDevice->scenario = 'assigndevice';
+            // print_r(Yii::$app->request->post());
+            if ($model->load(Yii::$app->request->post())) {
+                $fieldID = $_POST['Field']['fieldID'];
+                $deviceID = $_POST['Device']['pkDeviceID'];
+                $irrgationID = $_POST['Irrigationsystem']['irrigationID'];
+                $equipmentID = $_POST['Equipment']['pkEquipmentID'];
+
+                if ($fieldID != '' && $deviceID != '' && $equipmentID != '') { // print_r($_POST); die;
+                    if ($equipmentID != '') {
+                        $modelupdateEquipment = $this->findequipmentModel($equipmentID);
+                        $modelupdateEquipment->fkFieldID = $fieldID;
+                        $modelupdateEquipment->fkDeviceID = $deviceID;
+                        $modelupdateEquipment->fkIrrigationID = $irrgationID;  // print_r($modelupdateEquipment); die;
+                        $modelupdateEquipment->save();
+                    }
+
+
+                    if ($irrgationID != '') {
+                        $modelupdateIrrigation = $this->findirrigationModel($irrgationID);
+                        $modelupdateIrrigation->fkFieldID = $fieldID;
+                        $modelupdateIrrigation->save();
+                    }
+
+                    Yii::$app->session->setFlash('update', true);
+                    return $this->redirect(['index_relationship']);
+                } else {
+                    Yii::$app->session->setFlash('errorupdate', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('assignDevice', [
+                                'model' => $model,
+                                'modelIrrigation' => $modelIrrigation,
+                                'modelEquipment' => $modelEquipment,
+                                'modelDevice' => $modelDevice,
+                    ]);
+                }
+            } //print_r($model->getErrors()); die;
+            $this->layout = 'mainsubadmin';
+            return $this->render('assignDevice', [
+                        'model' => $model,
+                        'modelIrrigation' => $modelIrrigation,
+                        'modelEquipment' => $modelEquipment,
+                        'modelDevice' => $modelDevice,
+            ]);
+
+            return $this->redirect(['index_relationship']);
+        }
+    }
+
+    /**
+     *  ASSIGN FIELD TO FIELD TECHNICIAN    
+     */
+    public function actionAssignfield() {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $model = new TechnicianFieldrelation();
+
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+                $fieldid = $_POST['TechnicianFieldrelation']['fkFieldID'];
+                $technicianid = $_POST['TechnicianFieldrelation']['fkTechnicianID'];
+
+                $checkIsNew = 0;
+
+                if ($model->fkFieldID) {
+                    TechnicianFieldrelation::deleteAll('fkFieldID = :id', [':id' => $model->fkFieldID]);
+                } foreach ($technicianid as $id) {
+                    $technician = new TechnicianFieldrelation();
+                    $technician->fkFieldID = $fieldid;
+                    $technician->fkTechnicianID = $id;
+                    $technician->created_at = date('Y-m-d H:i:s');
+
+                    if (!count($this->checkExists($fieldid, $id))) {
+                        $technician->save();
+                        $checkIsNew = 1;
+                    } else {
+                        $checkIsNew = 2;
+                    }
+                }
+                if ($checkIsNew == '1') {
+                    $technician->scenario = 'assignfield';
+                    Yii::$app->session->setFlash('assign', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->redirect(['index']);
+                } if ($checkIsNew == '2') {
+                    Yii::$app->session->setFlash('errormultiple', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('assignField', [
+                                'model' => $model,
+                    ]);
+                }
+            } else {
+                $this->layout = 'mainsubadmin';
+                return $this->render('assignField', [
+                            'model' => $model,
+                ]);
+            }
+        }
+    }
+
+    public function actionFieldTechnician() {
+        $id = Yii::$app->request->post('id');
+        $modelFieldtech = TechnicianFieldrelation::find()->joinWith('techName')->where(['fkFieldID' => $id])->asArray()->all();
+        foreach ($modelFieldtech as $key => $techField) {
+            if ($techField['techName']['FeildtechName']) {
+                $data[$techField['fkTechnicianID']] = $techField['techName']['FeildtechName'];
+            }
+        }
+        return json_encode($data);
+    }
+
+    public function actionAjaxField() {
+        $id = Yii::$app->request->post('id');
+        $modelField = TechnicianFieldrelation::find()->select(['fkFieldID'])->where(['fkTechnicianID' => $id])->asArray()->all();
+
+        $data = ArrayHelper::map($modelField, 'fkFieldID', 'fkFieldID');
+//echo"<pre>";print_r($data);die;
+
+        return json_encode($data);
+    }
+
+    /**
+     *  ASSIGN Technician TO FIELD     
+     */
+    public function actionAssigntech() { //echo '<pre>'; print_r($_POST); die;
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $model = new TechnicianFieldrelation();
+
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) { // echo '<pre>'; print_r($_POST); die;
+                $fieldid = $_POST['TechnicianFieldrelation']['fkFieldID']; // echo '<pre>'; print_r($fieldid);
+                $technicianid = $_POST['TechnicianFieldrelation']['fkTechnicianID']; // echo '<pre>'; print_r($technicianid); die;
+//                echo"<pre>";
+//                print_r(Yii::$app->request->post());
+//                print_r($model->fkFieldID);
+//                die;
+                $checkIsNew = 0;
+                if ($model->fkTechnicianID) {
+                    TechnicianFieldrelation::deleteAll('fkTechnicianID = :id', [':id' => $model->fkTechnicianID]);
+                }
+                foreach ($fieldid as $id) {
+                    $technician = new TechnicianFieldrelation();
+                    $technician->fkFieldID = $id;
+                    $technician->fkTechnicianID = $technicianid;
+                    $technician->created_at = date('Y-m-d H:i:s');
+
+                    if (!count($this->checkExists($id, $technicianid))) {
+                        $technician->save();
+                        $checkIsNew = 1;
+                    } else {
+                        $checkIsNew = 2;
+                    }
+                }
+                if ($checkIsNew == '1') {
+                    $technician->scenario = 'assignfield';
+                    Yii::$app->session->setFlash('assign', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->redirect(['fieldtechnician/index']);
+                } if ($checkIsNew == '2') {
+                    Yii::$app->session->setFlash('errormultiple', true);
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('assignTechtofield', [
+                                'model' => $model,
+                    ]);
+                }
+            } else {
+                $this->layout = 'mainsubadmin';
+                return $this->render('assignTechtofield', [
+                            'model' => $model,
+                ]);
+            }
+        }
+    }
+
+    /**     * *  Assign Device Manage Relationship */
+    public function actionIndex_relationship() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $searchModel = new Equipment();
+            $modelField = new Field();
+            $dataProvider = $modelField->searchField(Yii::$app->request->queryParams);
+            $this->layout = 'mainsubadmin';
+            return $this->render('index_manage_relationship', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+                        'modelField' => $modelField,
+            ]);
+        } elseif (Yii::$app->user->identity->user_type == 'field-admin') {
+
+            $searchModel = new Equipment();
+            $modelField = new Field();
+            $dataProvider = $searchModel->searchTechnicianfield(Yii::$app->request->queryParams);
+            $this->layout = 'mainfieldadmin';
+            return $this->render('index_manage_relationship', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+                        'modelField' => $modelField,
+            ]);
+        }
+    }
+
+    public function actionSubtechnician() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'field-admin') {
+
+            $searchModel = new Equipment();
+            $modelField = new Field();
+            $dataProvider = $searchModel->searchField(Yii::$app->request->queryParams);
+            $this->layout = 'mainsubadmin';
+            return $this->render('index_manage_relationship', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+                        'modelField' => $modelField,
+            ]);
+        }
+    }
+
+    /*     * **** Assign Device Update Relationship */
+
+    public function actionUpdate($id, $eqpid) {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $preeqpid = $_GET['eqpid'];
+            $model = $this->findModel($id);
+            $model->scenario = 'updatedevice';
+            $modelEquipment = $this->findequipmentModel($eqpid);
+            $modelpreEquipment = $this->findequipmentModel($preeqpid);
+            $modelDevice = new Device;
+            $modelIrrigation = new Irrigationsystem;
+            $modelIrrigation->scenario = 'assigndevice';
+            $modelEquipment->scenario = 'assigndevice';
+            if ($modelEquipment->load(Yii::$app->request->post())) {
+
+                $id = $_POST['Field']['fieldID'];
+                $model = $this->findModel($id); // echo $eqpid; echo '<pre>';print_r($_POST); 
+                if ($_POST['Equipment']['pkEquipmentID'] != '') {
+
+                    $equipment = Yii::$app->db->createCommand()
+                            ->update('tbl_equipment', ['fkFieldID' => null, 'fkIrrigationID' => null, 'fkDeviceID' => null], 'pkEquipmentID = "' . $preeqpid . '"')
+                            ->execute();
+
+                    $equipment = Yii::$app->db->createCommand()
+                            ->update('tbl_equipment', ['fkFieldID' => $_POST['Field']['fieldID'], 'fkIrrigationID' => $_POST['Irrigationsystem']['irrigationID'], 'fkDeviceID' => $_POST['Device']['pkDeviceID']], 'pkEquipmentID = "' . $eqpid . '"')
+                            ->execute();
+
+                    if ($modelIrrigation = $this->findirrigationModel($modelpreEquipment->fkIrrigationID) == '') {
+
+                        $irrigation = Yii::$app->db->createCommand()
+                                ->update('tbl_irrigation', ['fkFieldID' => $_POST['Field']['fieldID']], 'irrigationID = "' . $_POST['Irrigationsystem']['irrigationID'] . '"')
+                                ->execute();
+                    } else {
+                        $irrigation = Yii::$app->db->createCommand()
+                                ->update('tbl_irrigation', ['fkFieldID' => null], 'irrigationID = "' . $modelpreEquipment->fkIrrigationID . '"')
+                                ->execute();
+                        $irrigation = Yii::$app->db->createCommand()
+                                ->update('tbl_irrigation', ['fkFieldID' => $_POST['Field']['fieldID']], 'irrigationID = "' . $_POST['Irrigationsystem']['irrigationID'] . '"')
+                                ->execute();
+                    }
+
+                    Yii::$app->session->setFlash('update', true);
+                    return $this->redirect(['index_relationship']);
+                } else {
+
+                    $equipment = Yii::$app->db->createCommand()
+                            ->update('tbl_equipment', ['fkFieldID' => null, 'fkIrrigationID' => null, 'fkDeviceID' => null], 'pkEquipmentID = "' . $preeqpid . '"')
+                            ->execute();
+                    Yii::$app->session->setFlash('update', true);
+                    return $this->redirect(['index_relationship']);
+                }
+            }
+
+            $this->layout = 'mainsubadmin'; //print_r($modelEquipment->fkDeviceID); die;
+            return $this->render('update', [
+                        'model' => $model,
+                        'modelIrrigation' => $modelIrrigation,
+                        'modelEquipment' => $modelEquipment,
+                        'modelDevice' => $modelDevice,
+            ]);
+        }
+    }
+
+    /* LIst of  Equpments assigned to particular fields */
+
+    public function actionView($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $this->layout = 'mainsubadmin';
+            return $this->render('equipmentview', [
+                        'model' => $this->findModel($id),
+            ]);
+        }
+    }
+
+    /* List of Irrigation System assigned to particular fields */
+
+    public function actionViewirrigation($id) {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $model = new Irrigationsystem();
+            $this->layout = 'mainsubadmin';
+            return $this->render('irrgationview', [
+                        'model' => $model->findIrrigations($id),
+            ]);
+        }
+    }
+
+    /* DELETE FIELD FROM DATABASE */
+    /* Free irrigation system and equipment from given field */
+
+    public function actionDelete($id) {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $modelfield = $this->findModel($id)->delete();
+            $modelEquipment = $this->findequipment($id); //  echo '<pre>';print_r($modelEquipment); die;
+            if ($modelEquipment != '') {
+                foreach ($modelEquipment as $modelEquipments) {
+                    $modelEquipments->fkFieldID = 0;
+                    $modelEquipments->fkDeviceID = 0;
+                    $modelEquipments->fkIrrigationID = 0;
+
+                    $equipment = Yii::$app->db->createCommand()
+                            ->update('tbl_equipment', ['fkFieldID' => 0, 'fkDeviceID' => 0, 'fkIrrigationID' => 0], 'pkEquipmentID = "' . $modelEquipments->pkEquipmentID . '"')
+                            ->execute();
+                }
+            }
+
+            $modelIrrigations = $this->findirrigation($id);
+            if ($modelIrrigations != '') {
+                foreach ($modelIrrigations as $modelIrrigation) {
+                    $modelIrrigation->fkFieldID = 0;
+
+                    $equipment = Yii::$app->db->createCommand()
+                            ->update('tbl_irrigation', ['fkFieldID' => 0], 'irrigationID = "' . $modelIrrigation->irrigationID . '"')
+                            ->execute();
+                }
+            }
+            $modelRelations = $this->findirrigationrelation($id);
+            if ($modelRelations != '') {
+                foreach ($modelRelations as $modelRelation) {
+                    $modelRelation->delete();
+                }
+            }
+            Yii::$app->session->setFlash('delete', true);
+            return $this->redirect(['index']);
+        }
+    }
+
+    protected function findModel($id) {
+
+        if (($model = Field::findOne($id)) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findirrigationModel($id) {
+
+        if (($model = Irrigationsystem::findOne($id)) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function finddeviceModel($id) {
+
+        if (($model = Device::findOne($id)) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findequipmentModel($id) {
+
+        if (($model = Equipment::findOne($id)) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findequipment($id) {
+        if (($model = Equipment::find()->select('pkEquipmentID')->where(['fkFieldID' => $id])->all()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findirrigation($id) {
+
+        if (($model = Irrigationsystem::find()->select('irrigationID')->where(['fkFieldID' => $id])->all()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findirrigationupdate($id) {
+
+        if (($model = Irrigationsystem::find()->where(['fkFieldID' => $id])->all()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findirrigationList($id) {
+
+        if (($model = Irrigationsystem::find()->where(['fkFieldID' => $id])->asArray()->all()) !== null) {
+            if ($model) {
+                foreach ($model as $key => $data) {
+                    $list[$data['irrigationID']] = $data['irrigationName'];
+                }
+                return $list;
+            } else {
+                return $list = [];
+            }
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    protected function findirrigationrelation($id) {
+
+        if (($model = TechnicianFieldrelation::find()->where(['fkFieldID' => $id])->all()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    //check for same field and  technician 
+    public function checkExists($fieldID, $techID) {
+
+        $connection = Yii::$app->db;
+        $modeltech = $connection->createCommand("SELECT id FROM  Technician_field_relationship where fkFieldID=$fieldID AND fkTechnicianID=$techID");
+        $users = $modeltech->queryAll();
+        return $users;
+    }
+
+}
+

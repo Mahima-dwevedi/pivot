@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/pivot_new/!svn/ver/599/system/branches/development/src/site/backend/controllers
+END
+FarmController.php
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/pivot_new/!svn/ver/599/system/branches/development/src/site/backend/controllers/FarmController.php
+END
+AdminController.php
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/pivot_new/!svn/ver/83/system/branches/development/src/site/backend/controllers/AdminController.php
+END
+EquipmentCronController.php
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/pivot_new/!svn/ver/583/system/branches/development/src/site/backend/controllers/EquipmentCronController.php
+END
+DeviceController.php
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/pivot_new/!svn/ver/552/system/branches/development/src/site/backend/controllers/DeviceController.php
+END
+SiteController.php
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/pivot_new/!svn/ver/441/system/branches/development/src/site/backend/controllers/SiteController.php
+END
+ListViewController.php
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/pivot_new/!svn/ver/565/system/branches/development/src/site/backend/controllers/ListViewController.php
+END
+EquipmentController.php
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/pivot_new/!svn/ver/520/system/branches/development/src/site/backend/controllers/EquipmentController.php
+END
+LoginController.php
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/controllers/LoginController.php
+END
+MapViewController.php
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/pivot_new/!svn/ver/548/system/branches/development/src/site/backend/controllers/MapViewController.php
+END
+FieldtechnicianController.php
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/pivot_new/!svn/ver/541/system/branches/development/src/site/backend/controllers/FieldtechnicianController.php
+END
+IrrigationsystemController.php
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/pivot_new/!svn/ver/490/system/branches/development/src/site/backend/controllers/IrrigationsystemController.php
+END
+UserController.php
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/controllers/UserController.php
+END
+EquipmentmetaController.php
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/pivot_new/!svn/ver/586/system/branches/development/src/site/backend/controllers/EquipmentmetaController.php
+END
+PivotSummaryController.php
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/pivot_new/!svn/ver/565/system/branches/development/src/site/backend/controllers/PivotSummaryController.php
+END
+CmsController.php
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/controllers/CmsController.php
+END
+FieldController.php
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/pivot_new/!svn/ver/585/system/branches/development/src/site/backend/controllers/FieldController.php
+END

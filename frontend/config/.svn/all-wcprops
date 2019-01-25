@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config
+END
+params-local.php
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/params-local.php
+END
+main-local.php
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/main-local.php
+END
+bootstrap.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/bootstrap.php
+END
+.gitignore
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/.gitignore
+END
+params.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/params.php
+END
+main.php
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/main.php
+END
+messages.php
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/config/messages.php
+END

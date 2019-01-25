@@ -1,0 +1,41 @@
+<?php
+
+namespace common\components;
+ 
+use Yii;
+use yii\base\Component;
+ 
+class Youtube extends Component {
+ 
+    /**
+     *  return array of youtube Chabnnel information.
+    */
+    public function getYoutubeChannelInfo($cid)
+    {
+        $curl = curl_init();
+        //$cid='UCK5LivAKvnHvsNwFmyHFRQQ'; 
+        //$api='AIzaSyAvso4eycLuNKBlXc7OG-mjk039mZaTHVI';
+        curl_setopt_array($curl, Array(
+        CURLOPT_URL => 'https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatus&id='.$cid.'&key=AIzaSyAvso4eycLuNKBlXc7OG-mjk039mZaTHVI',
+        CURLOPT_USERAGENT => 'spider',
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_CONNECTTIMEOUT => 30,
+        CURLOPT_RETURNTRANSFER => TRUE,
+        CURLOPT_ENCODING => 'UTF-8'
+        ));
+
+        $data = curl_exec($curl);
+
+        curl_close($curl);
+
+        $ytdata=json_decode($data, true);
+//        echo "Results:".$ytdata['pageInfo']['totalResults'].'<br>';
+//        echo "Channel name:".$ytdata['items'][0]['snippet']['title'];
+//        echo '<pre>'; print_r($ytdata); die;
+        return $ytdata;
+    }
+
+}
+
+
+?>

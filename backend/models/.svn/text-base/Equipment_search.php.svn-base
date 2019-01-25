@@ -1,0 +1,79 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\base\Model;
+use yii\data\ActiveDataProvider;
+use backend\models\Equipment;
+
+/**
+ * Equipment_search represents the model behind the search form about `backend\models\Equipment`.
+ */
+class Equipment_search extends Equipment
+{
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['pkEquipmentID', 'fkFeildID', 'EqpLength'], 'integer'],
+            [['EquipmentName', 'Longitude', 'Latitude', 'EqpLocationType', 'EqpWateringChart', 'EquipmentType', 'EqpManufacturer', 'EqpModel', 'EqpAmpsperHour', 'EqpStartup', 'EqpCycleRange', 'EqpCrashRange', 'EqpCreatedDate', 'EqpUpdatedDate'], 'safe'],
+            [['EqpAcresWatered'], 'number'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function scenarios()
+    {
+        // bypass scenarios() implementation in the parent class
+        return Model::scenarios();
+    }
+
+    /**
+     * Creates data provider instance with search query applied
+     *
+     * @param array $params
+     *
+     * @return ActiveDataProvider
+     */
+    public function search($params)
+    {
+        $query = Equipment::find();
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+        ]);
+
+        if (!($this->load($params) && $this->validate())) {
+            return $dataProvider;
+        }
+
+        $query->andFilterWhere([
+            'pkEquipmentID' => $this->pkEquipmentID,
+            'fkFeildID' => $this->fkFeildID,
+            'EqpAcresWatered' => $this->EqpAcresWatered,
+            'EqpStartup' => $this->EqpStartup,
+            'EqpLength' => $this->EqpLength,
+            'EqpCreatedDate' => $this->EqpCreatedDate,
+            'EqpUpdatedDate' => $this->EqpUpdatedDate,
+        ]);
+
+        $query->andFilterWhere(['like', 'EquipmentName', $this->EquipmentName])
+            ->andFilterWhere(['like', 'Longitude', $this->Longitude])
+            ->andFilterWhere(['like', 'Latitude', $this->Latitude])
+            ->andFilterWhere(['like', 'EqpLocationType', $this->EqpLocationType])
+            ->andFilterWhere(['like', 'EqpWateringChart', $this->EqpWateringChart])
+            ->andFilterWhere(['like', 'EquipmentType', $this->EquipmentType])
+            ->andFilterWhere(['like', 'EqpManufacturer', $this->EqpManufacturer])
+            ->andFilterWhere(['like', 'EqpModel', $this->EqpModel])
+            ->andFilterWhere(['like', 'EqpAmpsperHour', $this->EqpAmpsperHour])
+            ->andFilterWhere(['like', 'EqpCycleRange', $this->EqpCycleRange])
+            ->andFilterWhere(['like', 'EqpCrashRange', $this->EqpCrashRange]);
+
+        return $dataProvider;
+    }
+}

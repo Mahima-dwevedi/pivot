@@ -1,0 +1,513 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use backend\models\Device;
+use app\models\Admin;
+use yii\web\Controller;
+use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
+use backend\models\ImportFieldMapping;
+use yii\web\UploadedFile;
+use backend\models\Farm;
+
+class DeviceController extends \yii\web\Controller {
+
+    public function actionIndex() {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'super-admin') {
+            $searchModel = new Device();
+            $farmModel = new Farm();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            return $this->render('index', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+                        'farmModel' => $farmModel,
+            ]);
+        }
+    }
+
+    public function actionCreate() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'super-admin') {
+            $model = new Device();
+            $model->scenario = 'create';
+            $searchModel = new ImportFieldMapping();
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+                 //echo"<pre>";print_r(Yii::$app->request->post());
+                $model->DeviceCellularServiceContractDate = $this->changeDateFormat($model->DeviceCellularServiceContractDate);
+                $model->DeviceAddDate = date('Y-m-d H:i:s');
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('create', true);
+                    return $this->redirect(['index']);
+                }
+            } else {
+                return $this->render('create', [
+                            'model' => $model,
+                            'searchModel' => $searchModel,
+                ]);
+            }
+        }
+    }
+
+    public function actionView($id) { /* View device details */
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'super-admin') {
+            return $this->render('view', [
+                        'model' => $this->findModel($id),
+            ]);
+        }
+    }
+
+    public function actionUpdate() { /* Assign Device to a farm */
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'super-admin') {
+
+            $id = $_POST['Device']['DeviceSerialNo'];
+            $fkFarmID = $_POST['Farm']['farmName'];
+            if ($id != '' && $fkFarmID != '') { /* device and farm should not be blank */
+                $model = $this->findModel($id);
+                $model->fkFarmID = $fkFarmID;
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('assign', true);
+                    return $this->redirect(['index']);
+                } else {
+                    Yii::$app->session->setFlash('assign', true);
+                    return $this->redirect(['index']);
+                }
+            } else {
+                Yii::$app->session->setFlash('errorupdate', true);
+                return $this->redirect(['index']);
+            }
+        }
+    }
+
+    public function actionEdit($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'super-admin') {
+            $model = $this->findModel($id);
+            $model->farmUpdateDate = date('Y-m-d H:i:s');
+            $adminID = $model->fkAdminID;
+
+            $modelAdmin = Admin::findOne(['pkAdminID' => $adminID]);
+            $model->scenario = 'update';
+            $modelAdmin->scenario = 'updatefarm';
+            if (isset($_POST['Admin']['password']) && $_POST['Admin']['password'] != '') {
+
+                $modelAdmin->password_hash = Yii::$app->security->generatePasswordHash($_POST['Admin']['password']);
+            }
+            if ($modelAdmin->load(Yii::$app->request->post()) && $modelAdmin->validate()) {
+
+                $modelAdmin->updated_at = date('Y-m-d H:i:s');
+                if ($model->save()) {
+
+                    if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+                        $model->farmUpdateDate = date('Y-m-d H:i:s');
+                        $model->farmLicenseStartDate = date('Y-m-d', strtotime($_POST['Farm']['farmLicenseStartDate']));
+                        $model->farmLicenseExpireDate = date('Y-m-d', strtotime($_POST['Farm']['farmLicenseExpireDate']));
+                    } if ($model->save()) {
+                        Yii::$app->session->setFlash('update', true);
+                        return $this->redirect(['index']);
+                    }
+                } else {
+
+                    return $this->render('update', [
+                                'model' => $model,
+                                'modelAdmin' => $modelAdmin,
+                    ]);
+                }
+            } else {
+                return $this->render('update', [
+                            'model' => $model,
+                            'modelAdmin' => $modelAdmin,
+                ]);
+            }
+        }
+    }
+
+    public function actionDeactivate($id) { /* Deactivate Device Status */
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } else {
+            $model = $this->findModel($id);
+            $model->DeviceCellularServiceContractDate = date('Y-m-d H:i:s');
+            $model->DeviceAddDate = date('Y-m-d H:i:s');
+            $model->DeviceUpdateDate = date('Y-m-d H:i:s');
+
+            $model->DeviceStatus = 'Deactive';
+
+            if ($model->save()) {
+
+                Yii::$app->session->setFlash('delete', true);
+                return $this->redirect(['index']);
+            }
+        }
+    }
+
+    public function actionChangestatus() { /* Bulk status change of Device 'activate' or 'deactivate' */
+
+        $postArr = Yii::$app->request->post();
+        $status = ($postArr['DeviceStatus'] == 'activate') ? 'Active' : 'Deactive';
+        if (count($postArr['pkDeviceID']) > 0) {
+            foreach ($postArr['pkDeviceID'] as $val) {
+                $model = $this->findModel($val);
+                $model->DeviceStatus = $status;
+                $model->save(false);
+            }
+        }
+        return "Update";
+    }
+
+    public function actionActivate($id) { /* Activate Device Status */
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } else {
+
+            $model = $this->findModel($id);
+            $model->DeviceCellularServiceContractDate = date('Y-m-d H:i:s');
+            $model->DeviceAddDate = date('Y-m-d H:i:s');
+            $model->DeviceUpdateDate = date('Y-m-d H:i:s');
+
+
+            $model->DeviceStatus = 'active';
+            if ($model->save()) {
+                Yii::$app->session->setFlash('active', true);
+                return $this->redirect(['index']);
+            }
+        }
+    }
+
+    protected function findModel($id) {
+
+        if (($model = Device::findOne($id)) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    public function actionImport() { /* Import Csv file of device */
+
+        $model = new ImportFieldMapping();
+        $source_file = UploadedFile::getInstance($model, 'source_file');
+        $doc_path = \Yii::getAlias('@backend/web') . '/uploaded_files/member/';
+        $rannumber = time();
+        $model->source_file = $rannumber . '_' . $source_file->baseName . '.' . $source_file->extension;
+        $server_doc_path = ($doc_path . $rannumber . '_' . $source_file->baseName . '.' . $source_file->extension);
+
+        $objZipFile = new Device();
+        $zipfile = UploadedFile::getInstance($objZipFile, 'zipfile');
+        $zip_path = \Yii::getAlias('@backend/web') . '/uploaded_files/';
+        $rannumber = time();
+        //  $objZipFile->zipfile = $rannumber . '_' . $zipfile->baseName . '.' . $zipfile->extension;  echo '<pre>'; print_r($objZipFile); die;
+        //  $server_zip_path = ($zip_path . $rannumber . '_' . $zipfile->baseName . '.' . $zipfile->extension); 
+        if ($source_file->baseName != '') {
+            if (file_exists($server_doc_path)) {
+                unlink($server_doc_path);
+            }
+            $server_doc_path = ($doc_path . $rannumber . '_' . $source_file->baseName . '.' . $source_file->extension);
+            $source_file->saveAs($doc_path . $rannumber . '_' . $source_file->baseName . '.' . $source_file->extension, true);
+            //$zipfile->saveAs($zip_path . $rannumber . '_' . $zipfile->baseName . '.' . $zipfile->extension, true);
+            // $zipSource = $zipfile . " ";
+            // system("unzip -qd " . $zipfile . " " . $zipSource);
+        }
+
+// echo "hello have to import csv file"; die;
+        if (!isset($_POST[$server_doc_path]) && empty($_POST[$server_doc_path])) {
+
+            $model->source_file = $server_doc_path;
+            $validate = $model->validate();
+            if ($validate) {
+                $file_source = $server_doc_path;
+                if (file_exists($file_source)) {
+
+                    $DATA = $this->parse_file($file_source); // echo '<pre>';print_r($DATA); die;
+                    if (isset($DATA['DATA'])) {
+                        $arrFieldMapping = $model->getImportFieldMapping();
+                        $error = array();
+
+                        foreach ($DATA['DATA'] as $key => $row) { // echo '<pre>';print_r($DATA['DATA']); die; 
+                            $errorMsg = $this->checkRecord($row, $DATA['HEADER'], $arrFieldMapping, $key);
+                            if (!empty($errorMsg)) {
+                                $error[] = $errorMsg;
+                            }
+                        }
+
+                        if (!empty($error)) {
+
+                            Yii::$app->session->setFlash('error', true);
+                            return $this->redirect(['index']);
+                        } else {
+                            foreach ($DATA['DATA'] as $key => $row) {
+                                $this->processRecord($row, $DATA['HEADER'], $arrFieldMapping, $key);
+                            }
+                            Yii::$app->session->setFlash('import', true);
+                            return $this->redirect(['index']);
+                        }
+                    }
+                } else {
+                    Yii::$app->session->setFlash('sourcefileerror', true);
+                    return $this->redirect(['index']);
+                }
+            } else {
+                Yii::$app->session->setFlash('sourcefileerror', true);
+                return $this->redirect(['index']);
+            }
+            $this->redirect('index', array('model' => $model));
+        }
+    }
+
+    function parse_file($file) {
+
+        $array = array();
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            //  $lines = file($p_Filepath); print_r($lines); die;
+            $array = $this->parse_lines($handle);
+        } else {
+            return false;
+        }
+
+        return $array;
+    }
+
+    function parse_lines($handle) {
+        $array = array();
+        $header = array();
+        $row = 0;
+        while (($line = fgets($handle)) !== FALSE) {
+
+            $data = explode(",", $line);
+            $num = count($data);
+
+            if ($num == '5') {
+                for ($c = 0; $c < $num; $c++) {
+
+                    if ($row == 0) {
+
+                        $header[$c] = trim($data[$c]);
+                        $array['HEADER'][$c] = $data[$c];
+                    } else {
+                        $array['DATA'][$row][trim($header[$c])] = $data[$c];
+                    }
+                }
+                $row++;
+            }
+        }
+        // die;
+        fclose($handle);
+        return $array;
+    }
+
+    function processRecord($row, $headers, $arrFieldMapping = array(), $key) {
+
+        $errorMessage = array();
+        $values = $row;
+
+        $header_keys = array_keys($headers);
+
+        $values = array_change_key_case($values, CASE_LOWER);
+
+        $recordData = array();
+        foreach ($values as $key => $value) {
+
+            $value = trim($value);
+            if ($key != '') {
+
+                foreach ($arrFieldMapping as $db_field => $sourceArray) {
+                    $sourceFieldName = strtolower($sourceArray['source_field']);
+                    if ($key == $sourceFieldName) {
+                        $recordData[$db_field] = (!empty($value) ? $value : NULL);
+                    }
+                }
+            }
+        }
+
+        $model = new Device();
+        $model->DeviceSerialNo = $recordData['DeviceSerialNo'];
+        $model->DeviceCellularServiceProvider = $recordData['DeviceCellularServiceProvider'];
+        $model->DeviceCellularServiceContractDate = $recordData['DeviceCellularServiceContractDate'];
+        $model->DeviceCellularServicePhone = $recordData['DeviceCellularServicePhone'];
+        $model->DeviceSoftwareVersion = $recordData['DeviceSoftwareVersion'];
+
+//print_r($model->DeviceSerialNo); die('hello');
+
+
+        if ($model->save()) {
+            return;
+        }
+    }
+
+    function checkRecord($row, $headers, $arrFieldMapping = array(), $i) {
+        // echo '<pre>';print_r($row); print_r($headers);print_r($arrFieldMapping);print_r($i); die;
+        $errorMessage = array();
+        $values = $row;
+
+        $header_keys = array_keys($headers);
+
+        $values = array_change_key_case($values, CASE_LOWER);
+
+        $recordData = array(); // 
+        foreach ($values as $key => $value) {
+
+            $value = trim($value);
+            if ($key != '') {
+
+                foreach ($arrFieldMapping as $db_field => $sourceArray) {
+                    $sourceFieldName = strtolower($sourceArray['source_field']);
+                    if ($key == $sourceFieldName) {
+                        $recordData[$db_field] = (!empty($value) ? $value : NULL);
+                    }
+                }
+            }
+        }
+
+        $model = new Device();
+
+        $device = null;
+        if (isset($recordData['DeviceSerialNo'])) {
+            $device = $recordData['DeviceSerialNo'];
+            if (!is_null($device)) {
+                $recordData['DeviceSerialNo'] = $device;
+            } else {
+                $errorMessage[] = 'device provided as BLANK/NULL in source file.';
+            }
+        } else {
+
+            $errorMessage[] = 'device is not provided in source file.';
+        }
+
+        $ServiceProvider = null;
+        if (isset($recordData['DeviceCellularServiceProvider'])) {
+            $ServiceProvider = $recordData['DeviceCellularServiceProvider'];
+            if (!is_null($ServiceProvider)) {
+                $recordData['DeviceCellularServiceProvider'] = $ServiceProvider;
+            } else {
+                $errorMessage[] = 'Service Provider as BLANK/NULL in source file.';
+            }
+        } else {
+
+            $errorMessage[] = 'Service Provider is not provided in source file.';
+        }
+
+        $ServiceContractDate = null;
+        if (isset($recordData['DeviceCellularServiceContractDate'])) {
+            $ServiceContractDate = $recordData['DeviceCellularServiceContractDate'];
+            if (!is_null($ServiceContractDate)) {
+                $recordData['DeviceCellularServiceContractDate'] = $ServiceContractDate;
+            } else {
+                $errorMessage[] = 'Cellular Service Contract Date is not provided as BLANK/NULL in source file.';
+            }
+        } else {
+
+            $errorMessage[] = 'Cellular Service Contract Date is not provided in source file.';
+        }
+        $ServicePhone = null;
+        if (isset($recordData['DeviceCellularServicePhone'])) {
+            $ServicePhone = $recordData['DeviceCellularServicePhone'];
+            if (!is_null($ServicePhone)) {
+                $recordData['DeviceCellularServicePhone'] = $ServicePhone;
+            } else {
+                $errorMessage[] = 'ervice Phone provided as BLANK/NULL in source file.';
+            }
+        } else {
+
+            $errorMessage[] = 'Service Phone is not provided in source file.';
+        }
+        $SoftwareVersion = null;
+        if (isset($recordData['DeviceSoftwareVersion'])) {
+            $SoftwareVersion = $recordData['DeviceSoftwareVersion'];
+            if (!is_null($SoftwareVersion)) {
+                $recordData['DeviceSoftwareVersion'] = $SoftwareVersion;
+            } else {
+                $errorMessage[] = 'Software Version provided as BLANK/NULL in source file.';
+            }
+        } else {
+
+            $errorMessage[] = 'Software Version is not provided in source file.';
+        }
+
+        if (count($errorMessage) > 0) {
+            $errorMessage = implode("\n", $errorMessage);
+//            Extras::dump($errorMessage);
+            return $errorMessage;
+        } else {
+            return;
+        }
+    }
+
+    /**
+     *
+     * Checkduplicacy file in directory
+     *
+     */
+    public function checkIsFileExist($dir, $fileName, $ext, $start) {
+        if (($dir != "") && ($fileName != "")) {
+
+            $i = $start;
+
+            $getSource = $dir . $fileName . $i . '.' . $ext;
+
+            if (file_exists($getSource)) {
+                $add = $i + 1;
+
+                return $this->checkIsFileExist($dir, $fileName, $ext, $add);
+                //return $fileName.$i.'.'.$ext;
+            } else {
+                return $fileName . $i . '.' . $ext;
+            }
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     *
+     *   Get file name without extension
+     *
+     */
+    public function getFilenameWithoutExt($filename) {
+        $pos = strripos($filename, '.');
+
+        if ($pos === false) {
+
+            return $filename;
+        } else {
+
+            return substr($filename, 0, $pos);
+        }
+    }
+
+    /**
+     *
+     *   Get file file extension
+     *
+     */
+    public function getFileExt($filename) {
+        if ($filename) {
+            $ext = end(explode('.', $filename));
+            return $ext;
+        } else {
+            return '';
+        }
+    }
+
+    public function changeDateFormat($date) {
+        $dateArr = explode('-', $date);
+        $newDate = $dateArr[2] . '-' . $dateArr[0] . '-' . $dateArr[1];
+        return $newDate;
+    }
+
+}

@@ -1,0 +1,70 @@
+<?php
+
+namespace app\models;
+
+use Yii;
+use yii\base\Model;
+use yii\data\ActiveDataProvider;
+use app\models\Farm;
+use app\models\Admin;
+/**
+/**
+ * SearchBank represents the model behind the search form about `app\models\Bank`.
+ */
+class SearchFarm extends Farm
+{
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['farmID'], 'integer'],
+            [['farmName', 'farmAddDate', 'farmUpdateDate'], 'safe'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function scenarios()
+    {
+        // bypass scenarios() implementation in the parent class
+        return Model::scenarios();
+    }
+
+    /**
+     * Creates data provider instance with search query applied
+     *
+     * @param array $params
+     *
+     * @return ActiveDataProvider
+     */
+     public function getAdmin()
+    {
+        return $this->hasOne(admin::className(), ['pkAdminID' => 'fkAdminID']);
+        }
+        
+        
+     public function search($params)
+    {   
+        
+        $query = Farm::find();
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+            'pageSize' => Yii::$app->session->get('pagging'),
+            
+    ],
+            
+        ]); 
+           if (!($this->load($params) && $this->validate())) {
+           return $dataProvider;
+            
+        }
+          
+          
+         $query->andFilterWhere(['like', 'farmName', $this->farmName]);  
+        return $dataProvider;
+    }
+}

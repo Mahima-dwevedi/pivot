@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/pivot_new/!svn/ver/381/system/branches/development/src/site/common/models
+END
+LoginForm.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/models/LoginForm.php
+END
+Partners.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/models/Partners.php
+END
+User.php
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/models/User.php
+END
+Cms.php
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/models/Cms.php
+END
+Mail.php
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/pivot_new/!svn/ver/381/system/branches/development/src/site/common/models/Mail.php
+END
+Channel.php
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/models/Channel.php
+END

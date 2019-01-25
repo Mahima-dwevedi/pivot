@@ -1,0 +1,80 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+
+/**
+ * This is the model class for table "tbl_equipment_notification".
+ *
+ * @property integer $pkEquipmentNotificationID
+ * @property integer $fkEquipmentID
+ * @property integer $fkUserID
+ * @property string $EquipmentNotificationMessage
+ * @property integer $EquipmentNotificationStatus
+ * @property string $EquipmentNotificationSendTime
+ */
+class EquipmentNotification extends \yii\db\ActiveRecord
+{
+
+    /**
+     * @inheritdoc
+     */
+    public static function tableName()
+    {
+        return 'tbl_equipment_notification';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+//            [['fkEquipmentID', 'EquipmentNotificationMessage',], 'required'],
+            [['fkEquipmentID', 'EquipmentNotificationStatus', 'fkUserID'], 'integer'],
+            [['EquipmentNotificationSendTime'], 'safe'],
+            [['EquipmentNotificationMessage'], 'string', 'max' => 255]
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'pkEquipmentNotificationID' => 'Pk Equipment Notification ID',
+            'fkEquipmentID' => 'Fk Equipment ID',
+            'EquipmentNotificationMessage' => 'Equipment Notification Message',
+            'EquipmentNotificationStatus' => 'Equipment Notification Status',
+            'EquipmentNotificationSendTime' => 'Equipment Notification Send Time',
+            'fkUserID' => 'Created By'
+        ];
+    }
+
+    public function getFormNotification()
+    {
+
+        $conn = Yii::$app->db;
+        $id = Yii::$app->user->id;
+
+        $query = "select * from
+                (SELECT `tbl_equipment_notification`.*,tbl_equipment.EquipmentName
+                FROM `tbl_equipment_notification`
+                inner join tbl_equipment on `tbl_equipment_notification`.`fkEquipmentID`= tbl_equipment.pkEquipmentID
+                 inner join tbl_field on tbl_field.fkFarmID=tbl_equipment.fkFarmID
+                LEFT join Technician_field_relationship on Technician_field_relationship.fkFieldID=tbl_equipment.fkFieldID
+                 LEFT join tbl_technician on tbl_technician.pkTechnicianID=Technician_field_relationship.fkTechnicianID and tbl_technician.fkAdminID={$id}
+                union
+                SELECT `tbl_equipment_notification`.*,tbl_equipment.EquipmentName
+                FROM `tbl_equipment_notification`
+                LEFT join tbl_equipment on `tbl_equipment_notification`.`fkEquipmentID`= tbl_equipment.pkEquipmentID and tbl_equipment.fkFarmID={$id}
+                )as temp group by pkEquipmentNotificationID
+                ORDER BY temp.EquipmentNotificationSendTime DESC LIMIT 10";
+        $model = $conn->createCommand($query)->queryAll(); 
+        return $model;
+    }
+
+}

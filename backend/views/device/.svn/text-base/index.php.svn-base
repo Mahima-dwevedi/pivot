@@ -1,0 +1,262 @@
+<?php
+
+use yii\helpers\Html;
+use yii\grid\GridView;
+use yii\widgets\ActiveForm;
+/* @var $this yii\web\View */
+/* @var $searchModel app\models\SearchBank */
+/* @var $dataProvider yii\data\ActiveDataProvider */
+
+$this->title = 'Manage Devices';
+$this->params['breadcrumbs'][] = $this->title;
+?>
+
+<div class="pull-right margin_top20 mobile_margin">
+    <?= Html::a('Add New Device', ['create'], ['class' => 'btn btn-success']) ?>
+</div>
+<div class="user-index">
+
+    <div class="page-header">
+        <div class="pull-left">
+            <h1><?= Html::encode($this->title) ?></h1>
+        </div>          
+    </div>
+    <div class="breadcrumbs">
+        <ul>
+            <li><?php echo Html::a('Home', ['/site/index']); ?><i class="icon-angle-right"></i></li>
+            <li><span class="readcrum_without_link"><?= Html::encode($this->title) ?></span></li>
+        </ul>
+        <div class="close-bread"><a href="#"><i class="icon-remove"></i></a></div>
+</div>
+    <div class="breadcrumbs" id="message">
+    </div>
+<div class="breadcrumbs" id="breadcrumbs-msg">
+        <?php if ((Yii::$app->session->hasFlash('create')) || (Yii::$app->session->hasFlash('update'))|| (Yii::$app->session->hasFlash('createirrigation')) ||(Yii::$app->session->hasFlash('errorupdate')) || (Yii::$app->session->hasFlash('assign'))|| (Yii::$app->session->hasFlash('delete')) || (Yii::$app->session->hasFlash('error')) || (Yii::$app->session->hasFlash('active')) || (Yii::$app->session->hasFlash('import')) || (Yii::$app->session->hasFlash('sourcefileerror'))) { ?>
+            <ul>
+                <?php
+                if (Yii::$app->session->getFlash('create')) {
+                    echo '<li><span class="readcrum_without_link_success">' . ADD_DEVICE_SUCCESS . '</li>';
+                } else if (Yii::$app->session->getFlash('update')) {
+                    echo '<li><span class="readcrum_without_link_success">' . EDIT_DEVICE_SUCCESS . '</li>';
+                } else if (Yii::$app->session->getFlash('delete')) {
+                    echo '<li><span class="readcrum_without_link_success">' . DEACTIVATE_DEVICE_SUCCESS . '</li>';
+                } else if (Yii::$app->session->getFlash('error')) {
+                    echo '<li><span class="readcrum_without_link_success">' . ERROR_DEVICE_SUCCESS . '</li>';
+                } else if (Yii::$app->session->getFlash('active')) {
+                    echo '<li><span class="readcrum_without_link_success">' . ACTIVATE_DEVICE_ACCOUNT . '</li>';
+                }
+                else if (Yii::$app->session->getFlash('assign')) {
+                    echo '<li><span class="readcrum_without_link_success">' . ASSIGN_DEVICE_ACCOUNT . '</li>';
+                }
+                 else if (Yii::$app->session->getFlash('import')) {
+                    echo '<li><span class="readcrum_without_link_success">' . CSV_IMPORT_SUCCESS . '</li>';
+                }
+                else if (Yii::$app->session->getFlash('sourcefileerror')) {
+                    echo '<li><span class="readcrum_without_link_success">' . SOURCE_FILE_ERROR . '</li>';
+                }
+                else if (Yii::$app->session->getFlash('errorupdate')) {
+                    echo '<li><span class="readcrum_without_link_success">' . DEVICE_UPDATE_ERROR . '</li>';
+                }
+                 else if (Yii::$app->session->getFlash('createirrigation')) {
+                    echo '<li><span class="readcrum_without_link_success">' . IRRIGATION_CREATE_SUCCESS . '</li>';
+                }
+                ?>						
+            </ul>
+        <?php }
+        ?>
+    </div>
+<div class="search-form">
+    <?php  echo $this->render('update', ['searchModel' => $searchModel,
+                'farmModel' => $farmModel,]); ?>
+</div><!-- search-form -->
+
+<div class="search-form">
+    <?php echo $this->render('_search', ['model' => $searchModel]); ?>
+</div><!-- search-form -->
+<div class="cb"></div>
+
+<div class="row-fluid">
+    <?php \yii\widgets\Pjax::begin(['id' => 'device-grid']); ?>   
+    
+
+    <div class="box box-color box-bordered">
+        <div class="box-title">
+            <h3><i class="icon-reorder"></i><?= Html::encode($this->title) ?></h3>
+            <!--<a class="btn pull-right" data-toggle="modal" href="#" id = "viewAll">View All</a>-->
+        </div>
+        <div class="clear"></div>
+
+        <div class="box-content nopadding">
+            <?php \yii\widgets\Pjax::begin(); ?>   
+            <form action="" name='device-grid-list-form' id='device-grid-list-form'>
+				<div class="table-responsive">
+                <?=
+                GridView::widget([
+                    'dataProvider' => $dataProvider,
+                    'id' => 'device-grid',
+                    'columns' => [
+
+                        [
+                            'name' => 'pkDeviceID',
+                            'class' => 'yii\grid\CheckboxColumn'
+                        ],
+                        ['class' => 'yii\grid\SerialColumn'],
+                        [
+                            'attribute' => 'farmName',
+                            'label' =>'Farm Name',
+                            'value' => function ($data) {
+                                        if (isset($data->fkFarmID) && $data->fkFarmID != '') {
+                                            if (is_object($data->farm))
+                                                $name = $data->farm->farmName;
+                                            else
+                                                $name = 'not assigned';
+                                        }
+                                        else {
+                                            $name = "not assigned";
+                                        }
+                                        return $name; // $data['name'] for array data, e.g. using SqlDataProvider.
+                                    },
+                              
+                        ],
+                        [
+                            'attribute' => 'DeviceSerialNo',
+                            'label' =>'Device',
+                            'value' => function ($data) {
+                                return $data->DeviceSerialNo; // $data['name'] for array data, e.g. using SqlDataProvider.
+                            },
+                        ],
+                                     [
+                            'attribute' => 'DeviceAddDate',
+                                          'label' =>'Created Date',
+                            'value' => function ($data) {
+                               return date("m-d-Y", strtotime($data->DeviceAddDate)); // $data['name'] for array data, e.g. using SqlDataProvider.
+                            },
+                        ],
+                                    [
+                      'attribute' => 'DeviceStatus',
+                                        'label' =>'Status',
+                      'value' => function ($data) {
+                      return $data->DeviceStatus; // $data['name'] for array data, e.g. using SqlDataProvider.
+                      },
+                      ],
+                               [
+                                'header' => 'Action',
+                                'class' => 'yii\grid\ActionColumn',
+                                'template' => '{view} {deactivate} {activate} ',
+                                'buttons' => [
+                                    'deactivate' => function ($url, $model) {
+                                        return Html::a('<span class="glyphicon icon-ban-circle my_font_icon"></span>', $url, [
+                                                    'title' => Yii::t('app', 'deactivate'), 'data-pjax' => '0', 'data-confirm' => 'Are you sure you want to deactivate this account?',
+                                        ]);
+                                    },
+                                    'activate' => function ($url, $model) {
+                                        return Html::a('<span class="glyphicon icon-ok my_font_icon"></span>', $url, [
+                                                    'title' => Yii::t('app', 'activate'), 'data-pjax' => '0', 'data-confirm' => 'Are you sure you want to activate this account?',
+                                        ]);
+                                    },
+                                    'view' => function ($url, $model) {
+                                        return Html::a('<span class="glyphicon icon-eye-open my_font_icon"></span>', $url, [
+                                                    'title' => Yii::t('app', 'view'), 'data-pjax' => '0',
+                                        ]);
+                                    },        
+                                   
+                                ],
+                                'urlCreator' => function ($action, $model, $key, $index) {
+                                    if ($action === 'activate') {
+                                        $url = Yii::$app->urlManager->createUrl(['device/activate', 'id' => $model->pkDeviceID]);
+                                        //$url ='../../../view?slug='.$model->slug;
+                                        return $url;
+                                    }
+                                    if ($action === 'deactivate') {
+                                        $url = Yii::$app->urlManager->createUrl(['device/deactivate', 'id' => $model->pkDeviceID]);
+                                        //$url ='../../../view?slug='.$model->slug;
+                                        return $url;
+                                    }
+                                     if ($action === 'view') {
+                                        $url = Yii::$app->urlManager->createUrl(['device/view', 'id' => $model->pkDeviceID]);
+                                        return $url;
+                                    }
+                                 
+                                }
+                            ],
+                   
+                    ],
+                ]);
+                ?>
+				</div>
+                <div class="control-group">
+                      <div class="controls faqstatusDropdown">
+                       <?= Html:: dropDownList('DeviceStatus','',[ 'activate' => 'Active', 'deactivate' => 'Deactive', ], ['prompt' => '--Choose Action--','onchange'=> 'deviceMultipleAction(this.value)','id'=>'DeviceStatus']) ?>
+                    </div>
+                </div>
+<?php \yii\widgets\Pjax::end(); ?>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    
+    function deviceMultipleAction(action){ 
+        var checked_num = $('input[name="pkDeviceID[]"]:checked').length;
+    
+        if (!checked_num) { 
+            alert('Please select atleast one.');
+            $.pjax.reload({container:'#device-grid'});
+            $(document).on('pjax:complete', function(){
+                $("#DeviceStatus").select2();
+            });
+        }
+        else
+        { 
+     if(action=='activate' || action=='deactivate'){  
+ 
+    if ($('#DeviceStatus').val()=='Select') {
+                alert('Please Select valid option');
+            }
+            else
+            { 
+          if(confirm("Are you sure you want to perform this action?")){  
+                var data=$("#device-grid-list-form").serialize();
+                $.ajax({
+                    type: 'POST',
+                    url: 'changestatus',
+                    data:data,
+                   
+                    success:function(data){  
+                       
+                        if(data)
+                        {
+                            var statusMsg = "";
+                                statusMsg = 'device status has been Update successfully.';
+                                $('#message').html("<div class='breadcrumbs' id='breadcrumbs-msg'><ul><li><span class='readcrum_without_link_success'>"+statusMsg+"</span></li></ul></div>");
+                                $('#breadcrumbs-msg').fadeOut(3000);
+                                $.pjax.reload({container:'#device-grid'});
+                                $(document).on('pjax:complete', function(){
+                                    $("#faqStatus").select2();
+                              });
+                                statusMsg = '';
+                        }
+                    },error: function(data) { // if error occured
+                        alert("Error occured.Please try again.");
+                        $.pjax.reload({container:'#device-grid'});
+                        $(document).on('pjax:complete', function(){
+                            $("#DeviceStatus").select2();
+                        });
+                    },
+                    dataType:'html'
+                });
+		 }  else {
+                    $('input[type="checkbox"]').prop('checked', false);
+                    $("#farmStatus").select2("val", "Select");
+                }         	        
+            }
+        } 
+    }
+    }
+    
+    
+</script>
+
+

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/pivot_new/!svn/ver/11/system/branches/development/src/site/frontend/web
+END
+.gitignore
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/.gitignore
+END
+robots.txt
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/robots.txt
+END
+index-test.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/index-test.php
+END
+.htaccess
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/.htaccess
+END
+index.php
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/index.php
+END
+favicon.ico
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/frontend/web/favicon.ico
+END

@@ -1,0 +1,70 @@
+10
+
+dir
+603
+http://star.vinove.com/svn/pivot_new/system/branches/development/src/site/backend/views
+http://star.vinove.com/svn/pivot_new
+
+
+
+2015-08-18T13:44:13.856581Z
+603
+hemant.jhalani
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+72295b2a-fd81-4ad8-bf38-c03f813fca44
+
+device
+dir
+
+layouts
+dir
+
+cms
+dir
+
+field
+dir
+
+list-view
+dir
+
+site
+dir
+
+farm
+dir
+
+map-view
+dir
+
+equipment
+dir
+
+fieldtechnician
+dir
+
+irrigationsystem
+dir
+
+pivot-summary
+dir
+
+user
+dir
+
+equipmentmeta
+dir
+

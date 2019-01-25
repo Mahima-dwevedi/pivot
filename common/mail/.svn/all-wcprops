@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/mail
+END
+ticketnotification.php
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/mail/ticketnotification.php
+END
+passwordResetToken.php
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/common/mail/passwordResetToken.php
+END

@@ -1,0 +1,339 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+use backend\models\Field;
+use backend\models\EquipmentMeta;
+use backend\models\TechnicianFieldrelation;
+
+/**
+ * This is the model class for table "tbl_equipment".
+ *
+ * @property integer $pkEquipmentID
+ * @property integer $fkFeildID
+ * @property string $EquipmentName
+ * @property string $Longitude
+ * @property string $Latitude
+ * @property string $EqpLocationType
+ * @property string $EqpAcresWatered
+ * @property string $EqpWateringChart
+ * @property string $EquipmentType
+ * @property string $EqpManufacturer
+ * @property string $EqpModel
+ * @property string $EqpAmpsperHour
+ * @property string $EqpStartup
+ * @property string $EqpCycleRange
+ * @property string $EqpCrashRange
+ * @property integer $EqpLength
+ * @property integer $EqpWellCapacity
+ * @property string $EqpCreatedDate
+ * @property string $EqpUpdatedDate
+ */
+class Equipment extends \yii\db\ActiveRecord
+{
+
+    /**
+     * @inheritdoc
+     */
+    public static function tableName()
+    {
+        return 'tbl_equipment';
+    }
+
+    public $OldEqpWateringChart;
+    public $fieldName;
+    public $EquipmentNameSearch;
+    public $FieldSearch;
+    public $FullCircle;
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['fkFarmID', 'fkIrrigationID', 'EqpAcresWatered', 'EquipmentName', 'Longitude', 'Latitude', 'EquipmentType', 'EqpCreatedDate', 'EqpWellCapacity'], 'required'],
+            [['fkFarmID', 'fkFieldID', 'fkDeviceID', 'fkIrrigationID'], 'integer'],
+            [['EqpLength', 'gunThrow'], 'number'],
+            [['pkEquipmentID'], 'required', 'on' => 'assigndevice', 'message' => 'Please select a Equipment'],
+            [['EquipmentName', 'EqpLocationType', 'EquipmentType', 'electricVsdiesel'], 'string'],
+            [['ApplicationRate', 'gallonsperMinute', 'hoursperRevolution', 'Longitude', 'Latitude'], 'double'],
+            [['EquipmentName'], 'unique'],
+            [['EqpCycleRangeStart', 'EqpCycleRangeEnd'], 'integer', 'min' => 0, 'max' => 360],
+            [['EqpAcresWatered', 'EqpWellCapacity'], 'number'],
+            ['EqpWateringChart', 'file', 'extensions' => ['png', 'jpg', 'gif', 'jpeg', 'pdf'], 'skipOnEmpty' => true],
+            [['fkFieldID'], 'required', 'message' => 'Field name cannot be blank'],
+            [['FullCircle', 'EqpStartup', 'EqpCreatedDate', 'EqpUpdatedDate', 'EqpAcresWatered', 'EqpManufacturer', 'EqpModel', 'EqpAmpsperHour', 'EqpStartup', 'fkFieldID', 'EqpStatus', 'gunThrow', 'gallonsperMinute', 'ApplicationRate', 'hoursperRevolution', 'EqpLength', 'EqpCycleRangeStart', 'EqpCycleRangeEnd', 'electricVsdiesel', 'OldEqpWateringChart', 'FieldSearch', 'fkParentID', 'EqpWellCapacity'], 'safe'],
+            [['Longitude', 'Latitude', 'EqpModel', 'EqpAmpsperHour', 'EqpWateringChart', 'EqpCrashRangeStart', 'EqpCrashRangeEnd'], 'string', 'max' => 50],
+            [['EqpManufacturer'], 'string', 'max' => 250],
+            [['EqpLength', 'EqpCycleRangeStart', 'EqpCycleRangeEnd'], 'required', 'when' => function($model)
+                {
+                    return $model->EquipmentType == 0;
+                }, 'whenClient' => "function (attribute, value) {
+        return $('#equipment-equipmenttype').val() == 0;
+    }"],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'pkEquipmentID' => 'Pk Equipment ID',
+            'fkFarmID' => 'Farm ID',
+            'fkFieldID' => 'Field ID',
+            'fkDeviceID' => 'Device ID',
+            'fkIrrigationID' => 'Irrigation ID',
+            'EquipmentName' => 'Equipment Name',
+            'Longitude' => 'Longitude',
+            'Latitude' => 'Latitude',
+            'EqpLocationType' => 'Eqp Location Type',
+            'EqpAcresWatered' => 'Acres Watered',
+            'EqpWateringChart' => 'Eqp Watering Chart',
+            'EquipmentType' => 'Equipment Type',
+            'EqpManufacturer' => 'Equipment Manufacturer',
+            'EqpModel' => 'Equipment Model',
+            'EqpAmpsperHour' => 'Eqp Ampsper Hour',
+            'EqpStartup' => 'Eqp Startup',
+            'EqpCycleRangeStart' => 'Cycle Range Start',
+            'EqpCycleRangeEnd' => 'Cycle Range End',
+            'EqpLength' => 'Equipment Length',
+            'EqpStatus' => 'Status  ',
+            'EqpCreatedDate' => 'Eqp Created Date',
+            'EqpUpdatedDate' => 'Equipment Updated Date',
+            'EqpWellCapacity' => 'Well Capacity'
+        ];
+    }
+
+    public function getField()
+    {
+        return $this->hasOne(Field::className(), ['fieldID' => 'fkFieldID']);
+    }
+
+    public function getTechnicianFieldRelationship()
+    {
+
+        return $this->hasMany(TechnicianFieldrelation::className(), ['fkFieldID' => 'fkFieldID']);
+    }
+
+    public function getIrrigationsystem()
+    {
+        return $this->hasOne(Irrigationsystem::className(), ['irrigationID' => 'fkIrrigationID']);
+    }
+
+    public function getDevice()
+    {
+        return $this->hasOne(Device::className(), ['pkDeviceID' => 'fkDeviceID']);
+    }
+
+    public function getEqipmentMeta()
+    {
+        return $this->hasOne(EquipmentMeta::className(), ['fkEquipmentID' => 'pkEquipmentID']);
+    }
+
+    /*  function
+     *  Calculate number of Equipment created by farm admin zero level and farm admin one level
+     *  modeified date: 7-8-15 
+     */
+
+    public static function countEquipment()
+    {
+        $id = Yii::$app->user->id;
+        $parentid = Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $model = Equipment::find()->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->orderBy('pkEquipmentID')->count();
+        }
+        else
+        {
+            $model = Equipment::find()->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $parentid])->orderBy('pkEquipmentID')->count();
+        }
+        return $model;
+    }
+
+    public function search($params)
+    {
+
+        $id = Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check equipment according to level Date:5-8-2015
+            $query = Equipment::find()->Where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id]);
+            //   $query->andFilterWhere(['like', 'fkFarmID', $id]);
+        }
+        else
+        {
+
+            $query = Equipment::find()->Where(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID]);
+            ;
+            //   $query->andFilterWhere(['like', 'fkFarmID', $id]);
+        }
+
+
+        $dataProvider = new ActiveDataProvider([
+                    'query' => $query,
+                    'pagination' => [
+                        'pageSize' => 5,
+                        ],
+                        // 'sort' => ['attributes' => ['DeviceSerialNo', 'DeviceAddDate', 'DeviceStatus']],
+                ]);
+        if (($this->load($params) && $this->validate()))
+        {
+            return $dataProvider;
+        }
+
+        if (@$params['Equipment']['EquipmentNameSearch'] != '')
+        {//die('asf');
+            $query->andFilterWhere(['like', 'EquipmentName', $params['Equipment']['EquipmentNameSearch']]);
+            $this->EquipmentNameSearch = $params['Equipment']['EquipmentNameSearch'];
+        }
+
+        $query->andFilterWhere([
+            'id' => $this->pkEquipmentID,
+        ]);
+        $query->andFilterWhere(['like', 'EquipmentName', $this->EquipmentName]);
+        //   ->andWhere(['not', ['fkFieldID' => null]]);
+        return $dataProvider;
+    }
+
+    public function getEquipmentMeta()
+    {
+
+        return $this->hasOne(EquipmentMeta::className(), ['fkEquipmentID' => 'pkEquipmentID']);
+    }
+
+    public function searchField($params)
+    {
+//echo"<pre>";print_r($params);die;
+        $id = Yii::$app->user->id;
+        $query = Equipment::find()->Where(['tbl_equipment.fkFarmID' => $id])->andWhere(['not', ['tbl_equipment.fkFieldID' => null]]);
+        $query->joinWith('field');
+        $dataProvider = new ActiveDataProvider([
+                    'query' => $query,
+                    'pagination' => [
+                        'pageSize' => 5,
+                        ],
+                ]);
+        if (($this->load($params) && $this->validate()))
+        {
+            return $dataProvider;
+        }
+
+        if (@$params['Field']['fieldName'] != '')
+        {
+            $query->andFilterWhere(['like', 'fieldName', $params['Field']['fieldName']]);
+        }
+        if (@$params['Field']['FieldSearch'] != '')
+        {
+            $query->andFilterWhere(['like', 'fieldName', $params['Field']['FieldSearch']]);
+            $this->FieldSearch = $params['Field']['FieldSearch'];
+        }
+
+        return $dataProvider;
+    }
+
+    public function searchTechnicianfield($params)
+    {
+
+
+        $id = Yii::$app->user->id;
+        $model = $this->findModel($id);
+        $idwe = $model->pkTechnicianID;
+        $query = Equipment::find();
+
+        $query->joinWith([
+            'field' => function ($query)
+            {
+                
+            },
+        ])->joinWith([
+            'technicianFieldRelationship' => function ($query)
+            {
+                
+            },
+        ]);
+        $query->Where(['=', 'fkTechnicianID', $idwe]);
+
+
+        $dataProvider = new ActiveDataProvider([
+                    'query' => $query,
+                    'pagination' => [
+                        'pageSize' => 5,
+                        ],
+                ]);
+        if (($this->load($params) && $this->validate()))
+        {
+            return $dataProvider;
+        }
+
+        if (@$params['Field']['FieldSearch'] != '')
+        {
+            $query->andFilterWhere(['like', 'fieldName', $this->field->FieldSearch]);
+            $model->FieldSearch = @$params['Field']['FieldSearch'];
+//            $query->andFilterWhere(['like', 'fieldName', $params['Field']['fieldName']]);
+        }
+
+        return $dataProvider;
+    }
+
+    protected function findModel($id)
+    {
+        $model = Fieldtechnician::find()->select('pkTechnicianID')->where(['fkAdminID' => $id])->one();
+        if ($model !== null)
+        {
+            return $model;
+        }
+        else
+        {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+    //      autosuggestion for seach field 
+
+    public function getSearchList()
+    {
+
+        $id = \Yii::$app->user->id;
+        $array = [];
+
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check equipment according to level Date:5-8-2015
+            $model = Equipment::find()->select('EquipmentName')->Where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->asArray()->all();
+        }
+        else
+        {
+
+            $model = Equipment::find()->select('EquipmentName')->Where(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->asArray()->all();
+        }
+//        if (Yii::$app->user->identity->Adminlevel == '0') { // Condition to check field according to level Date:5-8-2015
+//            $model = Field::find()->select('fieldName')->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->asArray()->all();
+//        } else {
+//            $model = Field::find()->select('fieldName')->orWhere(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->asArray()->all();
+//        }
+        foreach ($model as $value)
+        {
+            array_push($array, $value['EquipmentName']);
+        }
+        return $array;
+    }
+
+    public static function stopEqipment($id)
+    {
+        $model = Equipment::findOne($id);
+        $model->EqpStatus = 0;
+        $model->save();
+        $equip = EquipmentMeta::findAll(['fkEquipmentID' => $id]);
+        foreach ($equip as $key => $value)
+        {
+            $eqMeta = EquipmentMeta::findOne($value['id']);
+            $eqMeta->PivotStopAction = 0;
+            $eqMeta->updateDate = date('Y-m-d H:i:s');
+            $eqMeta->save(false);
+        }
+    }
+
+}

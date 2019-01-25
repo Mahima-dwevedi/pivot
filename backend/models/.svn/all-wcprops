@@ -1,0 +1,149 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/pivot_new/!svn/ver/599/system/branches/development/src/site/backend/models
+END
+ResetPasswordForm.php
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/ResetPasswordForm.php
+END
+ImportFieldMapping.php
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/pivot_new/!svn/ver/56/system/branches/development/src/site/backend/models/ImportFieldMapping.php
+END
+Equipment_search.php
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/pivot_new/!svn/ver/71/system/branches/development/src/site/backend/models/Equipment_search.php
+END
+LoginForm.php
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/pivot_new/!svn/ver/249/system/branches/development/src/site/backend/models/LoginForm.php
+END
+Device.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/523/system/branches/development/src/site/backend/models/Device.php
+END
+Settings.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/Settings.php
+END
+PasswordResetRequestForm.php
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/pivot_new/!svn/ver/45/system/branches/development/src/site/backend/models/PasswordResetRequestForm.php
+END
+IrrigationSystemSearch.php
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/pivot_new/!svn/ver/497/system/branches/development/src/site/backend/models/IrrigationSystemSearch.php
+END
+TechnicianFieldrelation.php
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/pivot_new/!svn/ver/306/system/branches/development/src/site/backend/models/TechnicianFieldrelation.php
+END
+Equipment.php
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/pivot_new/!svn/ver/587/system/branches/development/src/site/backend/models/Equipment.php
+END
+searchcms.php
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/searchcms.php
+END
+Fieldtechnician.php
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/pivot_new/!svn/ver/541/system/branches/development/src/site/backend/models/Fieldtechnician.php
+END
+SearchFarm.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/SearchFarm.php
+END
+Irrigationsystem.php
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/pivot_new/!svn/ver/493/system/branches/development/src/site/backend/models/Irrigationsystem.php
+END
+user.php
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/user.php
+END
+EquipmentMeta.php
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/pivot_new/!svn/ver/586/system/branches/development/src/site/backend/models/EquipmentMeta.php
+END
+EquipmentNotification.php
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/pivot_new/!svn/ver/584/system/branches/development/src/site/backend/models/EquipmentNotification.php
+END
+PivotSummary.php
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/pivot_new/!svn/ver/583/system/branches/development/src/site/backend/models/PivotSummary.php
+END
+.gitkeep
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/.gitkeep
+END
+State.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/170/system/branches/development/src/site/backend/models/State.php
+END
+cms.php
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/models/cms.php
+END
+Field.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/585/system/branches/development/src/site/backend/models/Field.php
+END
+Farm.php
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/pivot_new/!svn/ver/599/system/branches/development/src/site/backend/models/Farm.php
+END
+Admin.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/598/system/branches/development/src/site/backend/models/Admin.php
+END

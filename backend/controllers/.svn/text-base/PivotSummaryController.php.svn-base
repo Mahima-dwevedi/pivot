@@ -1,0 +1,53 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use backend\models\PivotSummary;
+
+class PivotSummaryController extends \yii\web\Controller {
+
+    public function actionIndex() {
+        $id = \Yii::$app->request->get('id');
+
+        if ($id) {
+            $pivotSummary = new PivotSummary;
+            $model = $pivotSummary->getSummary($id);
+            $getLastCheckins = $pivotSummary->getCheckIn($model['DeviceSerialNo']);
+            $pressure = $getLastCheckins['pressure'];
+            $direction = $pivotSummary->getDirection($model['DeviceSerialNo']);
+            $lastStopTime = $pivotSummary->getLastStopTime($model["EqpStatus"], $id);
+            $calibration = $pivotSummary->getCalibration($model["DeviceSerialNo"]);
+            $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($model["DeviceSerialNo"], $pressure);
+            $noMovePressure = $pivotSummary->getAlarmMovePressure($model["DeviceSerialNo"], $pressure);
+            $idleDuration = $pivotSummary->getIdleDuration($model["EqpStatus"], $model['id']);
+            $speed = $pivotSummary->getSpeed($model["DeviceSerialNo"]);
+            $waterRate = $pivotSummary->getWaterRate($model["DeviceSerialNo"], $model['EqpWellCapacity'], $model['EqpAcresWatered']);
+            $needCycle = $pivotSummary->getNeedCycle($model['DesiredRate'], $model['EqpAcresWatered'], $model['TankLevel']);
+            $position = $pivotSummary->calculateHeading($getLastCheckins['My'], $getLastCheckins['Mz'], $calibration['minY'], $calibration['maxY'], $calibration['minZ'], $calibration['maxZ']);
+            $alarmWithNoPressure = $pivotSummary->getAlarmWithNoPressure($model['EqpStatus'], $pressure, $model['EquipmentType']);
+            $lastReportTime = $getLastCheckins['timestamp'];
+            if (Yii::$app->user->identity->user_type == 'field-admin') {
+                $this->layout = 'mainfieldadmin';
+            } else {
+                $this->layout = 'mainsubadmin';
+            }
+
+            return $this->render('index', [
+                        'model' => $model,
+                        'direction' => $direction,
+                        'position' => $position,
+                        'moveNoPressure' => $moveNoPressure,
+                        'noMovePressure' => $noMovePressure,
+                        'idleDuration' => $idleDuration,
+                        'pressure' => $pressure,
+                        'speed' => $speed,
+                        'waterRate' => $waterRate,
+                        'needCycle' => $needCycle,
+                        'alarmWithNoPressure' => $alarmWithNoPressure,
+                        'lastReportTime' => $lastReportTime,
+                        'lastStopTime' => $lastStopTime]);
+        }
+    }
+
+}

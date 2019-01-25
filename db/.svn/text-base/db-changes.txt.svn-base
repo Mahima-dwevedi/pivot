@@ -1,0 +1,7 @@
+  
+Date : 01-05-2015 Updated by Sathish
+
+----------------------------------------------------------------------
+
+ALTER TABLE `partners` CHANGE `partnerStatus` `partnerStatus` ENUM( '0', '1', '2', '3' ) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL COMMENT '0 => "New" 1 => "Active" 2 => "Inactive" 3 => "Reject"';
+

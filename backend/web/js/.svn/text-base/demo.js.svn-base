@@ -1,0 +1,134 @@
+
+function initGoogleMaps(latitude,longitude) {
+    var mapOptions = {
+        zoom: 12,
+        center: new google.maps.LatLng(latitude, longitude),
+        mapTypeId: google.maps.MapTypeId.SATELLITE
+    };
+    map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+}
+;
+
+function createGoogleRadar(latitude,longitude) {
+   
+    var opts = {
+        lat: latitude,
+        lng: longitude
+    }
+    if (typeof (myGoogleRadar) == 'undefined') {
+        if (typeof (map) != 'undefined') {
+            myGoogleRadar = new GoogleRadar(map, opts); 
+        }
+    }
+}
+;
+
+function loadAxis() {
+    
+    var opts = {
+        circleColor: "#00FF00",
+        radius: "1000",
+        n: 1
+    };
+
+    if (typeof (myGoogleRadar) != 'undefined')
+        myGoogleRadar.drawAxis(opts);
+
+}
+;
+
+function unloadAxis() {
+    if (typeof (myGoogleRadar) != 'undefined')
+        myGoogleRadar.undrawAxis();
+}
+;
+
+oPictoInit = {};
+function addMarker() {
+
+    oPictoInit = {
+        lat: oPicto.latitude,
+        lng: oPicto.longitude,
+        iconUrl: "./img/multi-agents.png",
+        id: "meeting",
+        name: "The Meeting Point",
+        content: "Hachiko, the most famous meeting point in Tokyo"
+    };
+
+    if (typeof (myGoogleRadar) != 'undefined')
+        myGoogleRadar.addMarker(oPictoInit);
+}
+;
+
+function removeMarker() {
+    if (typeof (myGoogleRadar) != 'undefined')
+        myGoogleRadar.removeMarker(oPictoInit);
+}
+;
+
+function addRadar() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        opts = {
+            time: 100,
+            zIndex: 5,
+        };
+        myGoogleRadar.addRadarLine(opts);
+    }
+}
+;
+
+function stopRadar() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.stopLine();
+    }
+}
+;
+
+function hideRadar() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.hideLine();
+    }
+}
+;
+
+function showRadar() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.showLine();
+    }
+}
+;
+
+function addRadarPolygon() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        opts = {
+            angle: 350,
+            time: 1000,
+            direction: '+'
+
+        };
+        myGoogleRadar.addRadarPolygon(opts);
+    }
+}
+;
+
+function stopRadarPolygon() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.stopRotatePolygon();
+    }
+}
+;
+
+function hideRadarPolygon() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.hidePolygon();
+    }
+}
+;
+function showRadarPolygon() {
+    if (typeof (myGoogleRadar) != 'undefined') {
+        myGoogleRadar.showPolygon();
+    }
+}
+;
+

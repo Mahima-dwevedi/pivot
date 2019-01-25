@@ -1,0 +1,554 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+use backend\models\Equipment;
+use backend\models\Fieldtechnician;
+
+/**
+ * This is the model class for table "tbl_field".
+ *
+ * @property integer $fieldID
+ * @property integer $fkIrrigationID
+ * @property integer $fkFarmID
+ * @property string $fieldName
+ * @property string $fieldInputID
+ * @property string $fieldOwner
+ * @property string $fieldOwnerAddress1
+ * @property string $fieldOwnerAddress2
+ * @property string $fieldOwnerPhone
+ * @property string $fieldOwnerEmail
+ * @property string $fieldAddress1
+ * @property string $fieldAddress2
+ * @property string $fieldPincode
+ * @property string $fieldStatus
+ * @property string $fieldAddDate
+ * @property string $fieldUpdateDate
+ */
+class Field extends \yii\db\ActiveRecord
+{
+
+    /**
+     * @inheritdoc
+     */
+    public $irrigationID;
+    public $FieldSearch;
+
+    public static function tableName()
+    {
+        return 'tbl_field';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['fkFarmID', 'fieldInputID', 'fieldAddress1', 'fieldAddress2', 'fieldPincode', 'fkFieldstateID', 'fieldName'], 'required'],
+            [['fkFarmID', 'fieldName', 'fieldInputID', 'fkFieldstateID'], 'required', 'on' => 'assignfield'],
+            [['fkFieldtechnicianID', 'fkFarmID', 'fieldOwnerPhone', 'fieldPincode', 'Pincode'], 'integer'],
+            [['fieldID'], 'required', 'on' => 'assigndevice', 'message' => 'Please select a field'],
+            [['fieldID'], 'required', 'on' => 'updatedevice', 'message' => 'Please select a field'],
+            [['fieldAddDate'], 'required', 'on' => 'assigndevice'],
+           // [['fieldName'], 'unique'],
+            [['fieldOwnerAddress1', 'fieldOwnerAddress2', 'fieldAddress1', 'fieldAddress2', 'fieldStatus'], 'string'],
+            [['fkFarmID', 'fieldName', 'fieldInputID', 'fieldOwnerPhone', 'fieldOwnerEmail', 'fieldAddress1', 'fieldPincode', 'fkStateID', 'fieldOwner', 'fieldOwnerAddress1', 'fkStateID', 'fieldOwnerPhone', 'fieldOwnerEmail', 'fieldSelectowner', 'fkParentID'], 'safe'],
+            [['fieldAddDate', 'fieldUpdateDate', 'fieldOwnerAddress2', 'fieldAddress2', 'fkFieldtechnicianID'], 'safe'],
+            [['fieldName', 'fieldInputID', 'fieldOwner', 'fieldOwnerPhone', 'fieldOwnerEmail'], 'string', 'max' => 255],
+            //  [['fieldPincode','Pincode'], 'string', 'max' => 5,'message'=>'Zipcode must contain 5 digits'],
+            [['fieldPincode', 'Pincode'], 'match', 'pattern' => '/^([0-9]{5})(-[0-9]{4})?$/i', 'message' => 'Zipcode must contain 5 digits'],
+            [['fieldOwnerEmail'], 'email'],
+//            [['fieldOwner', 'fieldOwnerAddress1', 'fieldOwnerAddress2', 'fkStateID', 'Pincode', 'fieldOwnerPhone'], 'required',
+//                'when' => function($model) {
+//                    $model->fieldSelectowner == '1';
+//                }, 'whenClient' => "function (attribute, value) {
+//        return $('#field-fieldselectowner').prop('checked') == true;
+//          }"]
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'fieldID' => 'Field ID',
+            'fkFieldtechnicianID' => 'Fk Sub Technician ID',
+            'fkFarmID' => 'Fk Farm ID',
+            'fieldName' => 'Field Name',
+            'fkStateID' => 'State',
+            'fkFieldstateID' => 'Field state',
+            'fieldInputID' => 'Field ID',
+            'fieldOwner' => 'Field Owner',
+            'fieldOwnerAddress1' => 'Field Owner Address1',
+            'fieldOwnerAddress2' => 'Field Owner Address2',
+            'Pincode' => 'Zip code',
+            'fieldOwnerPhone' => 'Field Owner Phone',
+            'fieldOwnerEmail' => 'Field Owner Email',
+            'fieldAddress1' => 'Field Stress Address',
+            'fieldAddress2' => 'city',
+            'fieldPincode' => 'Zip code',
+            'fieldStatus' => 'Field Status',
+            'fieldAddDate' => 'Field Added Date',
+            'fieldUpdateDate' => 'Field Update Date',
+        ];
+    }
+
+//    public function getEquipment()
+//    {
+//        return $this->hasMany(equipment::className(), ['fkFieldID' => 'fieldID']);
+//    }
+
+    public function getEquipment()
+    {
+
+        return $this->hasMany(equipment::className(), ['fkFieldID' => 'fieldID']);
+    }
+
+    //get State 
+    public function getState()
+    {
+
+        return $this->hasOne(State::className(), ['pkStateID' => 'fkFieldstateID']);
+    }
+
+    // get owner
+    public function getOwnerState()
+    {
+
+        return $this->hasOne(State::className(), ['pkStateID' => 'fkStateID']);
+    }
+
+    public function search($params)
+    {
+
+        $id = \Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check field according to level Date:5-8-2015
+            $query = Field::find()->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id]);
+        }
+        else
+        {
+
+            $query = Field::find()->orWhere(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID]);
+        }
+        $dataProvider = new ActiveDataProvider([
+
+                    'query' => $query,
+                    'pagination' => [
+                        'pageSize' => 5,
+                        ],
+                        // 'sort' => ['attributes' => ['DeviceSerialNo', 'DeviceAddDate', 'DeviceStatus']],
+                ]);
+
+        if (($this->load($params)) && $this->validate())
+        {
+            return $dataProvider;
+        }
+
+        if (@$params['Field']['FieldSearch'] != '')
+        {
+
+            $query->andFilterWhere(['like', 'fieldName', $params['Field']['FieldSearch']]);
+//            $query->andFilterWhere(['like', 'FieldSearch' , $this->FieldSearch]);
+            $this->FieldSearch = $params['Field']['FieldSearch'];
+        }
+
+        return $dataProvider;
+    }
+
+    public function searchField($params)
+    {
+//echo"<pre>";print_r($params);die;
+        $id = Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check field according to level Date:5-8-2015
+            $query = Equipment::find()->where(['tbl_equipment.fkFarmID' => $id])->orWhere(['tbl_equipment.fkParentID' => $id])->andWhere(['not', ['tbl_equipment.fkFieldID' => null]]);
+            $query->joinWith('field');
+        }
+        else
+        {
+            $query = Equipment::find()->where(['tbl_equipment.fkFarmID' => $id])->orWhere(['tbl_equipment.fkParentID' => Yii::$app->user->identity->fkUserID])->andWhere(['not', ['tbl_equipment.fkFieldID' => null]]);
+            $query->joinWith('field');
+        }
+
+        $dataProvider = new ActiveDataProvider([
+                    'query' => $query,
+                    'pagination' => [
+                        'pageSize' => 5,
+                        ],
+                ]);
+        if (($this->load($params) && $this->validate()))
+        {
+            return $dataProvider;
+        }
+
+        if (@$params['Field']['fieldName'] != '')
+        {
+            $query->andFilterWhere(['like', 'fieldName', $params['Field']['fieldName']]);
+        }
+        if (@$params['Field']['FieldSearch'] != '')
+        {
+            $query->andFilterWhere(['like', 'fieldName', $params['Field']['FieldSearch']]);
+            $this->FieldSearch = $params['Field']['FieldSearch'];
+        }
+
+        return $dataProvider;
+    }
+
+    public function findField()
+    {
+
+        $id = Yii::$app->user->id;
+        $model = Field::find()->where(['fkFarmID' => $id])->all();
+        return $model;
+    }
+
+    public function getField()
+    {
+        $id = \Yii::$app->user->id;
+        $ParentID = \Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check field according to level Date:5-8-2015
+            $equipment = Yii::$app->db->createCommand("SELECT fieldID,fieldName from tbl_field WHERE FKfarmID = $id OR fkParentID = $id");
+        }
+        else
+        {
+            $equipment = Yii::$app->db->createCommand("SELECT fieldID,fieldName from tbl_field WHERE FKfarmID = $id OR fkParentID = $ParentID");
+        } return $equipment->queryAll();
+    }
+
+    /*  function
+     *  Calculate number of fileds created by farm admin zero level and farm admin one level
+     *  modeified date: 7-8-15 
+     */
+
+    public static function countField()
+    {
+        $id = Yii::$app->user->id;
+        $parentid = Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $model = field::find()->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->orderBy('fieldID')->count();
+        }
+        else
+        {
+            $model = field::find()->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $parentid])->orderBy('fieldID')->count();
+        }
+        return $model;
+    }
+
+    public function getFieldtechnician()
+    {
+        return $this->hasOne(fieldtechnician::className(), ['pkTechnicianID' => 'fkFieldtechnicianID']);
+    }
+
+    public static function getFieldtech($id)
+    {
+        $array = [];
+        $equipment = Yii::$app->db->createCommand("SELECT tbl_technician.FeildtechName from tbl_technician inner join Technician_field_relationship on tbl_technician.pkTechnicianID = Technician_field_relationship.fkTechnicianID WHERE Technician_field_relationship.fkFieldID = $id");
+        $subtech = $equipment->queryAll();
+        foreach ($subtech as $value)
+        {
+            array_push($array, $value['FeildtechName']);
+        }
+
+        return implode(",", $array);
+    }
+
+    public static function getAssignedfieldtech()
+    {
+        $array = [];
+        $id = Yii::$app->user->id; // print_r($id); die;
+        $equipment = Yii::$app->db->createCommand("SELECT `tbl_field`.`fieldID` , `tbl_field`.`fieldName`
+FROM `tbl_field`
+INNER JOIN Technician_field_relationship ON Technician_field_relationship.fkFieldID = `tbl_field`.`fieldID`
+INNER JOIN tbl_technician ON tbl_technician.pkTechnicianID = Technician_field_relationship.fkTechnicianID
+AND tbl_technician.fkAdminID =$id");
+        return $equipment->queryAll(); //echo '<pre>';print_r($equipment); die;
+    }
+
+    /* Find device which is not assigned to any equipment 
+     */
+
+    public function getdevice($id)
+    {
+        $parentid = Yii::$app->user->identity->fkUserID;
+        $device = Yii::$app->db->createCommand("SELECT  `pkDeviceID`,`DeviceSerialNo` 
+FROM tbl_device a
+LEFT JOIN tbl_equipment b ON a.pkDeviceID = b.fkDeviceID
+WHERE b.fkDeviceID IS NULL AND a.DeviceStatus = 'Active'
+AND ((a.`fkFarmID` =$id) OR (a.`fkFarmID` = $parentid))");
+
+        $deviceserial = $device->queryAll();
+
+        return $deviceserial;
+    }
+
+    /* View file:- _formupdaterelation.php
+     * 
+     *  Find device which is not assigned to any equipment assigned to same parent farm account
+     */
+
+    public static function getDeviceUpdate($id, $equipID)
+    {
+        $parentid = Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+
+            $device = Yii::$app->db->createCommand("SELECT  `pkDeviceID`,`DeviceSerialNo` 
+FROM tbl_device a
+LEFT JOIN tbl_equipment b ON a.pkDeviceID = b.fkDeviceID  
+WHERE (b.fkDeviceID IS NULL or b.pkEquipmentID=$equipID) AND a.DeviceStatus = 'Active'
+AND a.`fkFarmID` =$id");
+        }
+        else
+        {
+
+            $device = Yii::$app->db->createCommand("SELECT  `pkDeviceID`,`DeviceSerialNo` 
+FROM tbl_device a
+LEFT JOIN tbl_equipment b ON a.pkDeviceID = b.fkDeviceID  
+WHERE (b.fkDeviceID IS NULL or b.pkEquipmentID=$equipID) AND a.DeviceStatus = 'Active'
+AND a.`fkFarmID` =$parentid");
+        }
+        $deviceserial = $device->queryAll();
+
+        return $deviceserial;
+    }
+
+    public function getEquipmentUpdate($id, $equipID)
+    {
+
+        $idw = $id;
+        $parentid = Yii::$app->user->identity->fkUserID;
+        $id = Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $equipment = Yii::$app->db->createCommand("SELECT  `pkEquipmentID`,`EquipmentName` 
+FROM tbl_equipment
+WHERE (fkIrrigationID IS NULL and fkDeviceID IS NULL or pkEquipmentID=$equipID)
+AND (fkFarmID =$id OR fkParentID = $id)");
+        }
+        else
+        {
+            $equipment = Yii::$app->db->createCommand("SELECT  `pkEquipmentID`,`EquipmentName` 
+FROM tbl_equipment
+WHERE (fkIrrigationID IS NULL and fkDeviceID IS NULL or pkEquipmentID=$equipID)
+AND (fkFarmID =$id OR fkParentID =$parentid)");
+        }
+        //echo"<pre>";print_r($valueequipment);die;
+        $equipmentname = $equipment->queryAll();
+        return $equipmentname;
+    }
+
+    public function getIrrigationUpdate($id)
+    {
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->id])->asArray()->all();
+        }
+        else
+        {
+
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->asArray()->all();
+        }
+        return $valueirrigation;
+    }
+
+    /*
+     * Get field of all those farm account which comes under same parent farm account
+     * Modified date 5-8-15
+     */
+
+    public static function getAllfield()
+    {
+        $id = Yii::$app->user->id;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $model = Field::find()->select(['fieldID', 'fieldName'])->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->asArray()->all();
+        }
+        else
+        {
+            $model = Field::find()->select(['fieldID', 'fieldName'])->where(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->asArray()->all();
+        }
+        $data = \yii\helpers\ArrayHelper::map($model, 'fieldID', 'fieldName');
+
+        return $data;
+    }
+
+    /**
+     * Get the field data 
+     * This method serves as fields and equipment related data only if equipment is associated with field
+     * */
+    public function getEquipmentField()
+    {
+        $id = \Yii::$app->user->id;
+        $ParentID = \Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $equipment = Yii::$app->db->createCommand("SELECT fieldID,fieldName from tbl_field as f INNER JOIN  tbl_equipment on fkFieldID=fieldID WHERE f.FKfarmID = $id OR f.fkParentID = $id group by fieldID");
+        }
+        else
+        {
+            $equipment = Yii::$app->db->createCommand("SELECT fieldID,fieldName from tbl_field as f INNER JOIN  tbl_equipment on fkFieldID=fieldID WHERE f.FKfarmID = $id OR f.fkParentID = $ParentID group by fieldID");
+        }
+        return $equipment->queryAll();
+    }
+
+//      autosuggestion for seach field 
+
+    public function getSearchList()
+    {
+
+        $id = \Yii::$app->user->id;
+        $array = [];
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check field according to level Date:5-8-2015
+            $model = Field::find()->select('fieldName')->where(['fkFarmID' => $id])->orWhere(['fkParentID' => $id])->asArray()->all();
+        }
+        else
+        {
+            $model = Field::find()->select('fieldName')->orWhere(['fkFarmID' => $id])->orWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->asArray()->all();
+        }
+        foreach ($model as $value)
+        {
+            array_push($array, $value['fieldName']);
+        }
+        return $array;
+    }
+
+    //      autosuggestion for seach field for device relationship
+
+    public function getSearchRelationList()
+    {
+
+        $id = \Yii::$app->user->id;
+        $array = [];
+        $con = Yii::$app->db;
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        { // Condition to check field according to level Date:5-8-2015
+            $query = "SELECT tbl_field.fieldName"
+                    . " FROM `tbl_equipment`"
+                    . " inner join tbl_field on `tbl_field`.fieldID=`tbl_equipment`.fkFieldID"
+                    . " WHERE ((`tbl_equipment`.`fkFarmID`=$id) OR (`tbl_equipment`.`fkParentID`=$id)) AND (NOT (`tbl_equipment`.`fkFieldID` IS NULL))";
+            $model = $con->createCommand($query)->queryAll();
+        }
+        else
+        {
+            $query = "SELECT tbl_field.fieldName"
+                    . " FROM `tbl_equipment`"
+                    . " inner join tbl_field on `tbl_field`.fieldID=`tbl_equipment`.fkFieldID"
+                    . " WHERE ((`tbl_equipment`.`fkFarmID`=$id) OR (`tbl_equipment`.`fkParentID`=" . Yii::$app->user->identity->fkUserID . ")) AND (NOT (`tbl_equipment`.`fkFieldID` IS NULL))";
+            $model = $con->createCommand($query)->queryAll();
+        }
+
+        foreach ($model as $value)
+        {
+            array_push($array, $value['fieldName']);
+        }
+        if ($array)
+        {
+            return $array;
+        }
+        else
+        {
+            return $array = ["fieldName"];
+        }
+    }
+
+    /**
+     * Get the field data 
+     * This method serves all equipment related data only if equipment is associated with field
+     * */
+    public static function getListField()
+    {
+        $id = \Yii::$app->user->id;
+        $ParentID = \Yii::$app->user->identity->fkUserID;
+        $query = "SELECT `tbl_device`.DeviceSerialNo,tbl_irrigation.irrigationName,tbl_field.fieldName,`tbl_equipment`.*"
+                . " FROM `tbl_equipment` "
+                . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID` ";
+        if (Yii::$app->user->identity->Adminlevel == '0')
+        {
+            $query .= " WHERE `tbl_equipment`.`fkParentID`=$id group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+        }
+        else
+        {
+            $query .= " WHERE `tbl_equipment`.`fkParentID`=$ParentID group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+        }
+        $equipment = Yii::$app->db->createCommand($query);
+
+        return $equipment->queryAll();
+    }
+
+    /**
+     * Get the field data
+     * This method serves all equipment related data only if equipment is associated with field
+     * */
+    public static function getTechnicianField()
+    {
+        $id = \Yii::$app->user->id;
+
+        $query = "SELECT `tbl_device`.DeviceSerialNo,tbl_irrigation.irrigationName,tbl_field.fieldName,`tbl_equipment`.*"
+                . " FROM `tbl_technician` "
+                . " INNER JOIN `Technician_field_relationship` ON pkTechnicianID = fkTechnicianID"
+                . " INNER JOIN `admin` ON pkAdminID = fkAdminID"
+                . " LEFT JOIN tbl_equipment ON `Technician_field_relationship`.fkFieldID = `tbl_equipment`.fkFieldID"
+                . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID` ";
+
+        $query .= " WHERE `pkAdminID`=:id group by pkEquipmentID";
+        return Yii::$app->db->createCommand($query)->bindValue(':id', $id)->queryAll();
+    }
+    
+    /*     * ********
+     * check for unique FieldTechnician name for given farm account
+     * return true if FieldTechnician exists else, false
+     * 
+     * *********** */
+
+    public function checkUniqueField($name) {
+
+        $id = \Yii::$app->user->id;
+        $parentid=Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $data = Field::find()->where('fkParentID =:id and fieldName=:name', [':id' => $id, ':name' => $name])->count();
+        } else {
+            $data = Field::find()->where('fkParentID =:id and fieldName=:name', [':id' => $parentid, ':name' => $name])->count();
+        }
+        
+        return $data;
+
+    }
+     /*     * ********
+     * check for unique FieldTechnician name for given farm account
+     * return true if FieldTechnician exists else except on given id, false
+     * 
+     * *********** */
+     public function checkUniqueFieldupdate($fieldID, $name) {
+
+        $id = \Yii::$app->user->id;
+        $parentid=Yii::$app->user->identity->fkUserID;
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $data = Field::find()->where('fkParentID =:id and fieldName=:name', [':id' => $id, ':name' => $name])->andWhere(['not in','fieldID',$fieldID])->count();
+            $this->addError("fieldName", 'Field name already exists.');
+        } else {
+            $data = Field::find()->where('fkParentID =:id and fieldName=:name', [':id' => $parentid, ':name' => $name])->andWhere(['not in','fieldID',$fieldID])->count();
+            $this->addError("fieldName", 'Field name already exists.');
+        }
+        
+        return $data;
+
+    }
+
+}

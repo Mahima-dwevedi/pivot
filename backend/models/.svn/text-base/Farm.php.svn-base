@@ -1,0 +1,177 @@
+<?php
+
+namespace backend\models;
+
+use Yii;
+use yii\data\ActiveDataProvider;
+use app\models\Admin;
+
+/**
+ * This is the model class for table "tbl_farm".
+ *
+ * @property integer $farmID
+ * @property integer $fkAdminID
+ * @property string $farmName
+ * @property string $farmUserName
+ * @property string $farmPassword
+ * @property string $farmAddress1
+ * @property string $farmAddress2
+ * @property string $farmPincode
+ * @property string $farmEmail
+ * @property string $farmContactNumber
+ * @property string $farmInstrumentAllottedDate
+ * @property string $farmLicenseStartDate
+
+ * @property string $farmNotificationStatus
+ * @property string $farmStatus
+ * @property string $farmAddDate
+ * @property string $farmUpdateDate
+ */
+class Farm extends \yii\db\ActiveRecord {
+
+    /**
+     * @inheritdoc
+     */
+    public $radio;
+
+    public static function tableName() {
+        return 'tbl_farm';
+    }
+
+    /**
+     * @inheritdocarray('title, content', 'required',
+      'message'=>'Please enter a value for {attribute}.'),
+     */
+    public function rules() {
+        return [
+            [['farmName', 'farmLicenseStartDate', 'farmLicenseExpireDate'], 'required', 'on' => 'create'],
+//            [['farmName', 'farmNotificationStatus'], 'required', 'on' => 'createaccount'],
+            [['farmName'], 'required', 'on' => 'createaccount'],
+            [['farmName', 'Name'], 'required', 'on' => 'update'],
+            [['fkAdminID'], 'integer'],
+            ['farmName', 'unique', 'on' => 'update'],
+            ['farmName', 'unique', 'on' => 'create'],
+            [['farmAddress1', 'farmAddress2', 'farmStatus'], 'string'],
+            [['fkAdminID', 'Name', 'farmID', 'farmNotificationStatus', 'farmInstrumentAllottedDate', 'farmPincode', 'farmAddress1', 'farmAddress2', 'Name', 'farmLicenseStartDate', 'farmStatus', 'farmAddDate', 'farmUpdateDate'], 'safe'],
+            [['farmName', 'farmNotificationStatus', 'Name'], 'string', 'max' => 255],
+            [['farmPincode'], 'string', 'max' => 5],
+            [['farmLicenseStartDate'], 'required', 'on' => 'create', 'message' => 'License Start Date cannot be blank'],
+            [['farmLicenseExpireDate'], 'required', 'on' => 'create', 'message' => 'License Expire Date cannot be blank'],
+//            [['farmNotificationStatus'], 'required', 'on' => 'create', 'message' => 'Notification Status cannot be blank'],
+            [['farmLicenseStartDate'], 'required', 'on' => 'update', 'message' => 'License Start Date cannot be blank'],
+            [['farmLicenseExpireDate'], 'required', 'on' => 'update', 'message' => 'License Expire Date cannot be blank'],
+//            [['farmNotificationStatus'], 'required', 'on' => 'update', 'message' => 'Notification cannot be blank'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels() {
+        return [
+            'farmID' => 'Farm ID',
+            'fkAdminID' => 'Fk Admin ID',
+            'farmName' => 'Farm Name',
+            'Name' => 'Name',
+            'farmAddress1' => 'Farm Address',
+            'farmAddress2' => 'Farm Address2',
+            'farmPincode' => 'Farm Pincode',
+            'farmInstrumentAllottedDate' => 'Farm Instrument Allotted Date',
+            'farmLicenseStartDate' => 'Farm License Start Date',
+            'farmLicenseExpireDate' => 'Farm License Expire Date',
+            'farmNotificationStatus' => 'Farm Notification',
+            'farmStatus' => 'Farm Status',
+            'farmAddDate' => 'Farm Add Date',
+            'farmUpdateDate' => 'Farm Update Date',
+        ];
+    }
+
+    /* Relation between admin and farm account on basis of previos flow
+     * 
+     */
+
+// public function getAdmin()
+//    {
+//        return $this->hasOne(admin::className(), ['pkAdminID' => 'fkAdminID']);
+//    }
+
+    /*
+     * Relation between Super admin and farm account which is create by super admin
+     * 
+     */
+    public function getAdmin() {
+        return $this->hasOne(admin::className(), ['pkAdminID' => 'fkAdminID']);
+    }
+
+    /*
+     * Search at the creation of farm admin created by super admin
+     * 
+     */
+
+    public function search($params) {
+
+        $query = Farm::find()->joinWith('admin', true, 'INNER JOIN')->andWhere(['admin.Adminlevel' => '0']);
+
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 5,
+            ],
+            'sort' => ['attributes' => ['farmName', 'farmAddDate', 'farmLicenseStartDate', 'farmLicenseExpireDate', 'farmStatus']],
+                // 'sort' => ['attributes' => ['farmAddDate']],
+        ]);
+
+        if (!($this->load($params) && $this->validate())) {
+            return $dataProvider;
+        }
+
+        $query->andFilterWhere([ 'like', 'farmName', $this->farmName]);
+
+        return $dataProvider;
+    }
+
+    public function searchfarmadmin($params) {
+
+        $query = Farm::find();
+        $query->andFilterWhere(['like', 'fkAdminID', $id]);
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 5,
+            ],
+            'sort' => ['attributes' => ['farmName', 'farmAddDate', 'farmLicenseStartDate', 'farmLicenseExpireDate', 'farmStatus']],
+                // 'sort' => ['attributes' => ['farmAddDate']],
+        ]);
+        if (!($this->load($params) && $this->validate())) {
+            return $dataProvider;
+        }
+
+        $query->andFilterWhere(['like', 'farmName', $this->farmName]);
+
+        return $dataProvider;
+    }
+
+    public static function getDetails() {
+        $userID = Admin::find()->select(['pkAdminID'])->where(['fkUserID' => Yii::$app->user->id])->orderBy('pkAdminID DESC')->asArray()->one();
+        $resultValue = Farm::find()->select('farmID')->where(['fkAdminID' => $userID['pkAdminID']])->orderBy('farmID DESC')->one();
+// echo"<pre>";print_r($resultValue);die;
+        if (!$resultValue == '') {
+            return $resultValue->farmID;
+        } else {
+            return null;
+        }
+    }
+
+    public function getSearchFarmList() {
+
+        $array = [];
+        $model = Farm::find()->select('farmName')->joinWith('admin', true, 'INNER JOIN')->andWhere(['admin.Adminlevel' => '0'])->all();
+
+        foreach ($model as $value) {
+            array_push($array, $value['farmName']);
+        }
+        return $array;
+    }
+
+}

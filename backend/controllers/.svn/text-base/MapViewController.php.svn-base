@@ -1,0 +1,159 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use backend\models\Field;
+use backend\models\Equipment;
+use backend\models\EquipmentMeta;
+use backend\models\PivotSummary;
+
+class MapViewController extends \yii\web\Controller {
+
+    public function actionIndex($ID = '') {
+        $pivotSummary = new PivotSummary;
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $model = new Field();
+            $allField = $model->getEquipmentField();
+            $allEquipment = array();
+
+            if (!empty($_GET['ID'])) {
+                $fieldID = Yii::$app->request->get('ID');
+                $equipmentModel = new Equipment;
+                $conn = \Yii::$app->db;
+                $query = "SELECT tbl_device.DeviceSerialNo,EquipmentMeta.updateDate,EquipmentMeta.PivotStopAction,tbl_irrigation.irrigationName,`tbl_equipment`.*"
+                        . " FROM `tbl_equipment` "
+                        . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                        . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                        . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                        . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID`"
+                        . " WHERE `tbl_equipment`.`fkFieldID`=$fieldID group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+                $allEquipment = $conn->createCommand($query)->queryAll();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                    //position
+                    $calibration = $pivotSummary->getCalibration($allEquipment[$i]["DeviceSerialNo"]);
+                    $position = $pivotSummary->calculateHeading($pressure['My'], $pressure['Mz'], $calibration['minY'], $calibration['maxY'], $calibration['minZ'], $calibration['maxZ']);
+                    $allEquipment[$i]['position'] = $position;
+                }
+            } else {
+                $allEquipment = Field::getListField();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                    $calibration = $pivotSummary->getCalibration($allEquipment[$i]["DeviceSerialNo"]);
+                    $position = $pivotSummary->calculateHeading($pressure['My'], $pressure['Mz'], $calibration['minY'], $calibration['maxY'], $calibration['minZ'], $calibration['maxZ']);
+                    $allEquipment[$i]['position'] = $position;
+                }
+            }
+
+            $this->layout = 'mainsubadmin';
+            return $this->render('index', [
+                        'model' => $allField, 'allEquipment' => $allEquipment,
+            ]);
+        } elseif (Yii::$app->user->identity->user_type == 'field-admin') {
+
+            $model = new Field();
+            $allField = $model->getAssignedfieldtech();
+            $allEquipment = array();
+
+            if (!empty($_GET['ID'])) {
+                $fieldID = Yii::$app->request->get('ID');
+                $equipmentModel = new Equipment;
+                $conn = \Yii::$app->db;
+                $query = "SELECT tbl_device.DeviceSerialNo,EquipmentMeta.updateDate,EquipmentMeta.PivotStopAction,tbl_irrigation.irrigationName,`tbl_equipment`.*"
+                        . " FROM `tbl_equipment` "
+                        . " LEFT JOIN `tbl_irrigation` ON `tbl_equipment`.`fkIrrigationID` = `tbl_irrigation`.`irrigationID`"
+                        . " LEFT JOIN `tbl_field` ON `tbl_equipment`.`fkFieldID` = `tbl_field`.`fieldID`"
+                        . " LEFT JOIN tbl_device ON `tbl_equipment`.fkDeviceID = tbl_device.pkDeviceID"
+                        . " LEFT JOIN `EquipmentMeta` ON `tbl_equipment`.`pkEquipmentID` = `EquipmentMeta`.`fkEquipmentID` "
+                        . " WHERE `tbl_equipment`.`fkFieldID`=$fieldID group by `tbl_equipment`.pkEquipmentID order by EquipmentMeta.id desc";
+                $allEquipment = $conn->createCommand($query)->queryAll();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                    $calibration = $pivotSummary->getCalibration($allEquipment[$i]["DeviceSerialNo"]);
+                    $position = $pivotSummary->calculateHeading($pressure['My'], $pressure['Mz'], $calibration['minY'], $calibration['maxY'], $calibration['minZ'], $calibration['maxZ']);
+                    $allEquipment[$i]['position'] = $position;
+                }
+            } else {
+                $allEquipment = Field::getTechnicianField();
+                for ($i = 0; $i < count($allEquipment); $i++) {
+                    $pressure = $pivotSummary->getCheckIn($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['pressure'] = $pressure['pressure'];
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($allEquipment[$i]['DeviceSerialNo'],$pressure['pressure']);
+                    $allEquipment[$i]['moveNoPressure'] = $moveNoPressure;
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($allEquipment[$i]['DeviceSerialNo'], $pressure['pressure']);
+                    $allEquipment[$i]['noMovePressure'] =$noMovePressure;
+                    //speed from device table after calculation
+                    $speed = $pivotSummary->getSpeed($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['speed'] = $speed;
+                    //direction from device table after calculation
+                    $direction = $pivotSummary->getDirection($allEquipment[$i]['DeviceSerialNo']);
+                    $allEquipment[$i]['direction'] = $direction;
+                    //alert from device table after calculation
+                    $calibration = $pivotSummary->getCalibration($allEquipment[$i]["DeviceSerialNo"]);
+                    $position = $pivotSummary->calculateHeading($pressure['My'], $pressure['Mz'], $calibration['minY'], $calibration['maxY'], $calibration['minZ'], $calibration['maxZ']);
+                    $allEquipment[$i]['position'] = $position;
+                }
+            }
+            $this->layout = 'mainfieldadmin';
+            return $this->render('index', [
+                        'model' => $allField, 'allEquipment' => $allEquipment,
+            ]);
+        }
+    }
+
+    // map view stop equipment
+    public function actionStopEquip($id) {
+        $model = Equipment::findOne($id);
+        $model->EqpStatus = 0;
+        $model->save();
+        $equip = EquipmentMeta::findAll(['fkEquipmentID' => $id]);
+        foreach ($equip as $key => $value) {
+            $eqMeta = EquipmentMeta::findOne($value['id']);
+            $eqMeta->PivotStopAction = 0;
+            $eqMeta->updateDate = date('Y-m-d H:i:s');
+            $eqMeta->save(false);
+        }
+        $this->redirect(['/map-view']);
+    }
+
+}

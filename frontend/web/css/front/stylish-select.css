@@ -1,0 +1,23 @@
+
+.stylish-select .SSContainerDivWrapper {left:-9999px;}
+
+.stylish-select .select_box .SSContainerDivWrapper,.stylish-select .category_box .SSContainerDivWrapper {margin:0;padding:0;width:101%;position:absolute;top:37px!important;left:0px !important;z-index:2; border:  0 none;}
+.stylish-select .select_box ul.newList,.stylish-select .category_box ul.newList {margin:0;padding:0;list-style:none;float: left;border-top: none; overflow: visible; width:100%; height:120px !important}
+.stylish-select .select_box ul.newList *,.stylish-select .category_box ul.newList * {margin:0;padding:0;background:#fdfbfb;border:none; width: 99%;}
+.stylish-select .select_box ul.newList a,.stylish-select .category_box ul.newList a {text-decoration:none;display:block;padding:6px 13px; width:92%;font:13px/13px 'open_sanslight';color:#000;font:300 13px/13px 'Open Sans';}
+.stylish-select .select_box .newListSelected,.stylish-select .category_box .newListSelected {width:100%;color:#000;height:36px;float:left;background: url(../../img/front/select-down-arrow.png) no-repeat 97% center; cursor: pointer;}
+.stylish-select .select_box .selectedTxt,.stylish-select .category_box .selectedTxt { color: #000;font:300 13px/20px 'Open Sans';height:28px;overflow: hidden;padding:8px 0 0 13px;width: 96%;}
+
+.stylish-select .dm_box .SSContainerDivWrapper {margin:0;padding:0;width:75%;position:absolute;top:37px!important;left:0px !important;z-index:2; border:  0 none;}
+.stylish-select .dm_box ul.newList {margin:0;padding:0;list-style:none;float: left;border-top: none; overflow: visible; width:100%; height:38px}
+.stylish-select .dm_box ul.newList * {margin:0;padding:0;background:#fdfbfb;border:none; width: 99%;}
+.stylish-select .dm_box ul.newList a {text-decoration:none;display:block;padding:6px 13px; width:92%;font:13px/13px 'open_sanslight';color:#000;font:300 13px/13px 'Open Sans';}
+.stylish-select .dm_box .newListSelected {width:100%;color:#000;height:36px;float:left;background: url(../../img/front/select-down-arrow.png) no-repeat 95% center; cursor: pointer;}
+.stylish-select .dm_box .selectedTxt { color: #000;font:300 13px/20px 'Open Sans';height:28px;overflow: hidden;padding:8px 0 0 13px;width: 85%;}
+
+.stylish-select .year_box .SSContainerDivWrapper {margin:0;padding:0;width:90%;position:absolute;top:37px!important;left:0px !important;z-index:2; border:  0 none;}
+.stylish-select .year_box ul.newList {margin:0;padding:0;list-style:none;float: left;border-top: none; overflow: visible; width:100%; height:38px}
+.stylish-select .year_box ul.newList * {margin:0;padding:0;background:#fdfbfb;border:none; width: 99%;}
+.stylish-select .year_box ul.newList a {text-decoration:none;display:block;padding:6px 13px; width:92%;font:13px/13px 'open_sanslight';color:#000;font:300 13px/13px 'Open Sans';}
+.stylish-select .year_box .newListSelected {width:100%;color:#000;height:36px;float:left;background: url(../../img/front/select-down-arrow.png) no-repeat 96% center; cursor: pointer;}
+.stylish-select .year_box .selectedTxt { color: #000;font:300 13px/20px 'Open Sans';height:28px;overflow: hidden;padding:8px 0 0 13px;width: 85%;}

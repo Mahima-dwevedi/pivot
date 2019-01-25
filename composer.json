@@ -1,0 +1,12 @@
+{
+    "require": {
+        "yiisoft/yii2-imagine": "~2.0",
+        "omnilight/yii2-shopping-cart": "*",
+        "kartik-v/yii2-export": "*",
+        "kartik-v/yii2-widgets": "*",
+        "kartik-v/yii2-mpdf": "~1.0",
+        "2amigos/yii2-ckeditor-widget": "*",
+        "2amigos/yii2-google-maps-library": "*",
+        "2amigos/yii2-date-time-picker-widget": "~1.0"
+    }
+}

@@ -1,0 +1,65 @@
+<?php
+
+if($_SERVER['HTTP_HOST'] == "localhost" || $_SERVER['HTTP_HOST'] == "10.0.0.88")
+{
+	$arrConfig['dbHost'] = 'localhost';
+	$arrConfig['dbName'] = 'pivot';
+	$arrConfig['dbUser'] = 'root';
+	$arrConfig['dbPass'] = 'vinove';
+	$siteUrl = "http://localhost/pivot/";
+	$rootURL = "http://localhost/pivot";
+}
+else if($_SERVER['HTTP_HOST'] == "i.vinove.com" && substr(trim($_SERVER['PHP_SELF'],'/'),0,strpos(trim($_SERVER['PHP_SELF'],'/'),'/')) == 'pivot')
+{
+	$arrConfig['dbHost'] = 'localhost';	
+	$arrConfig['dbName'] = 'pivot';
+	$arrConfig['dbUser'] = 'sandbox';
+	$arrConfig['dbPass'] = 'vinove';
+	$siteUrl = "http://i.vinove.com/pivot/";
+	$rootURL = "http://i.vinove.com/pivot";
+      
+}
+else
+{
+	$arrConfig['dbHost'] = 'localhost';
+	$arrConfig['dbName'] = 'thelenna_pivot';
+	$arrConfig['dbUser'] = 'pivotTracker';
+	$arrConfig['dbPass'] = '1202Samaria';
+	$siteUrl = "http://lennardag.com/pivot/";
+	$rootURL = "http://lennardag.com/pivot/";
+
+}
+############### End DB configure here ######################
+
+
+return [
+    'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
+    'timeZone' => 'America/New_York',
+    'components' => [
+        'cache' => [
+            'class' => 'yii\caching\FileCache',
+        ],
+    'urlManager' => [
+            'class' => 'yii\web\UrlManager',
+            'enablePrettyUrl' => true,
+            'showScriptName' => 'false'
+        ],
+        
+       'mail' => [
+      'class' => 'yii\swiftmailer\Mailer',
+       'viewPath' => '@common/mail',
+        'useFileTransport' => false,
+           
+      'transport' => [
+        'class' => 'Swift_SmtpTransport',
+        'host' => 'localhost',
+        'username' => '',
+        'password' => '',
+        'port' => '25',
+      
+      ],
+          
+    ],
+    ],
+];
+

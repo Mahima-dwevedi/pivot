@@ -1,0 +1,110 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use yii\web\Controller;
+use backend\models\EquipmentMeta;
+use backend\models\Equipment;
+
+class EquipmentmetaController extends \yii\web\Controller
+{
+
+    public function actionIndex()
+    {
+        return $this->render('create');
+    }
+
+    public function actionCreate()
+    {
+
+        if (!isset(Yii::$app->user->id))
+        {
+            return $this->redirect(['/site/login']);
+        }
+        elseif (Yii::$app->user->identity->user_type == 'farm-admin' || Yii::$app->user->identity->user_type == 'field-admin')
+        {
+            $model = new EquipmentMeta();
+            if ($model->load(Yii::$app->request->post()) && $model->validate())
+            {
+
+                $id = $_POST['EquipmentMeta']['pkEquipmentID'];
+                $modelEquipment = $this->findModelEquipment($id);
+                $modelEquipment->EqpStatus = 1;
+
+                $modelEquipment->save();
+                $model->fkEquipmentID = $_POST['EquipmentMeta']['pkEquipmentID'];
+                $model->startDate = date('Y-m-d H:i:s');
+                $model->updateDate = date('Y-m-d H:i:s');
+                $model->ScheduledStopTime = ($_POST['EquipmentMeta']['ScheduledStopTime'] != '') ? (date('Y-d-m H:i:s', strtotime($_POST['EquipmentMeta']['ScheduledStopTime']))) : '0000-00-00 00:00:00';
+                $model->PivotStopAction = 1;
+                $model->fkUserID = Yii::$app->user->id;
+                $model->StopandSlot = $model->StopandSlot == "" ? 0 : $model->StopandSlot;
+                if ($model->save())
+                {
+                    Yii::$app->session->setFlash('start', true);
+                    
+                    return $this->redirect(["/".$model->type]);
+                }
+            }
+            else
+            {
+                if (isset($_GET['id']))
+                {
+                    $id = $_GET['id'];
+                    Yii::$app->view->params['id'] = $id;
+                }
+                if (Yii::$app->user->identity->user_type == 'farm-admin')
+                {
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('create', [
+                                'model' => $model,
+                                    //'id' => $id,
+                            ]);
+                }
+                else
+                {
+                    $this->layout = 'mainfieldadmin';
+                    return $this->render('create', [
+                                'model' => $model,
+                                    //'id' => $id,
+                            ]);
+                }
+            }
+        }
+    }
+
+    public function actionStop($id)
+    {
+
+        $equipment = Yii::$app->db->createCommand()
+                ->update('tbl_equipment', ['EqpStatus' => 0], 'pkEquipmentID = "' . $id . '"')
+                ->execute();
+        $modelEquipmentmeta = $this->findModelEquipmentmeta($id);
+        foreach ($modelEquipmentmeta as $modelEquipmentmetas)
+        {
+            $modelEquipmentmetas->PivotStopAction = 0;
+            $modelEquipmentmetas->updateDate = date('Y-m-d H:i:s');
+            $equipment = Yii::$app->db->createCommand()
+                    ->update('EquipmentMeta', ['PivotStopAction' => 0], 'id = "' . $modelEquipmentmetas->id . '"')
+                    ->execute();
+        }
+        Yii::$app->session->setFlash('stop', true);
+        return $this->redirect(['field/index_relationship']);
+    }
+
+    public function findModelEquipment($id)
+    {
+
+        $modelEquipment = Equipment::findOne($id);
+        return $modelEquipment;
+    }
+
+    public function findModelEquipmentmeta($id)
+    {
+        $model = EquipmentMeta::find()->select('id')->where(['fkEquipmentID' => $id])->all();
+
+        return $model;
+    }
+
+}

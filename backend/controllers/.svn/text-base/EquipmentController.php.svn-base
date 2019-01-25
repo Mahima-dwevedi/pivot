@@ -1,0 +1,218 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+
+use backend\models\Equipment;
+
+use backend\models\Irrigationsystem;
+
+use yii\web\NotFoundHttpException;
+use backend\models\Field;
+use yii\web\UploadedFile;
+
+
+class EquipmentController extends \yii\web\Controller {
+
+    public function actionIndex() {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $searchModel = new Equipment();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            $this->layout = 'mainsubadmin';
+            return $this->render('index', [
+                        'searchModel' => $searchModel,
+                        'dataProvider' => $dataProvider,
+            ]);
+        }
+    }
+
+    public function actionCreate() {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $id = \Yii::$app->user->id;
+            $model = new Equipment();
+            $modelIrrigation = new Irrigationsystem();
+            $model->EqpCreatedDate = date('Y-m-d H:i:s');
+            $model->fkFarmID = $id;
+            if ($model->load(Yii::$app->request->post())) {
+
+                $model->EqpWateringChart = UploadedFile::getInstance($model, 'EqpWateringChart');
+                $rannumber = time();
+                $path = \Yii::getAlias('@backend/web') . '/uploaded_files/water_chart/';
+                if ($model->EqpWateringChart) {
+                    $image = UploadedFile::getInstance($model, 'EqpWateringChart');
+                    $model->EqpWateringChart = $rannumber . '_' . $image;
+                    $image->saveAs($path . $rannumber . '_' . $image->baseName . '.' . $image->extension);
+                }
+                if ($model->fkFieldID == '') {
+                    $model->fkFieldID == 0;
+                } else {
+                    $model->fkFieldID = $_POST['Equipment']['fkFieldID'];
+                }
+                $model->fkIrrigationID = $_POST['Irrigationsystem']['irrigationID'];
+                //Condition for farm account admin level at creation of Equipment
+
+                if (Yii::$app->user->identity->Adminlevel == '0') {
+                    $model->fkParentID = Yii::$app->user->id;
+                } else {
+                    $model->fkParentID = Yii::$app->user->identity->fkUserID;
+                }
+                if ($model->validate() && $model->save()) {
+                    $this->layout = 'mainsubadmin';
+                    Yii::$app->session->setFlash('create', true);
+                    return $this->redirect(['index']);
+                } else {
+                    $this->layout = 'mainsubadmin';
+                    return $this->render('create', [
+                                'model' => $model,
+                                'modelIrrigation' => $modelIrrigation,
+                       //  'arrIrrigat'=>$arrIrrigat,
+                    ]);
+                }
+            } else {
+                $model->EqpCycleRangeStart = 0;
+                $model->EqpCycleRangeEnd = 360;
+                $this->layout = 'mainsubadmin';
+                return $this->render('create', [
+                            'model' => $model,
+                            'modelIrrigation' => $modelIrrigation,
+                   //  'arrIrrigat'=>$arrIrrigat,
+                ]);
+            }
+        }
+    }
+
+    public function actionUpdate($id) {
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+            $model = $this->findModel($id);
+            
+            $modelIrrigation1 = $this->findirrigationModel($model->fkFieldID);   
+            $arrIrrigat=array();
+            foreach($modelIrrigation1 as $irr){
+               $arrIrrigat[$irr->irrigationID] = $irr->irrigationName;
+            }
+         //   print_r($arrIrrigat); die;
+                    
+            if ($model->load(Yii::$app->request->post())) {
+
+                $EqpWateringChart = UploadedFile::getInstance($model, 'EqpWateringChart');
+                if ($EqpWateringChart) {
+//                    print_r(Yii::$app->request->post());die;
+                    $rannumber = time();
+                    $image = UploadedFile::getInstance($model, 'EqpWateringChart');
+
+                    $model->EqpWateringChart = $rannumber . '_' . $image;
+                    $path = \Yii::getAlias('@backend/web') . '/uploaded_files/water_chart/';
+                    $pathImageThumb = \Yii::getAlias('@backend/web/uploaded_files') . '/water_chart/thumb/';
+                    // Image::thumbnail($path . $rannumber . '_' . $image->baseName . '.' . $image->extension, 120, 120)->save($pathImageThumb . $rannumber . '_' . $image->baseName . '.' . $image->extension, ['quality' => 80]);
+                    $image->saveAs($path . $rannumber . '_' . $image->baseName . '.' . $image->extension);
+//                Image::thumbnail($path . $rannumber . '_' . $image->baseName . '.' . $image->extension, 120, 120)->save($pathImageThumb . $rannumber . '_' . $image->baseName . '.' . $image->extension, ['quality' => 80]);
+                } else {
+                    $model->EqpWateringChart = $model->OldEqpWateringChart;
+                }
+
+                $model->EqpCreatedDate = date('Y-m-d H:i:s');
+                $model->EqpStartup = date('Y-m-d H:i:s');
+                if ($model->save() && $model->validate()) {
+                    @unlink($path . $model->OldEqpWateringChart);
+                    @unlink($pathImageThumb . $model->OldEqpWateringChart);
+                    $this->layout = 'mainsubadmin';
+                    Yii::$app->session->setFlash('update', true);
+                    return $this->redirect(['index']);
+                }
+            } else {
+                $modelIrrigation = new Irrigationsystem();
+                $this->layout = 'mainsubadmin';
+                return $this->render('update', [
+                            'model' => $model,
+                            'modelIrrigation' => $modelIrrigation,
+                            'arrIrrigat'=>$arrIrrigat,
+                ]);
+            }
+        }
+    }
+
+    /*     * **** AUTO COMPLETE FIELD THROUGH AJAX IN ASSIGN DEVICE   */
+
+    public function actionGetirrigation() {
+
+        $value = Field::find()
+                        ->where(['fieldID' => $_GET['id']])->one();
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        //condition to check level date 5-8-2015
+        $items['field'] = ['id' => $value->fieldID, 'name' => $value->fieldName, 'fieldInputID' => $value->fieldInputID, 'fieldAddDate' => date('m-d-Y', strtotime($value->fieldAddDate))];
+        if (Yii::$app->user->identity->Adminlevel == '0') {
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->id])->all();
+        } else {
+            $valueirrigation = Irrigationsystem::find()
+                            ->andWhere(['fkfieldID' => $_GET['id']])->andWhere(['fkParentID' => Yii::$app->user->identity->fkUserID])->all();
+        }
+        $count = 0;
+        foreach ($valueirrigation as $values) {
+            $items['irrigationData'][$values->irrigationID] = $values->irrigationName;
+            $count++;
+        }
+        return $items;
+    }
+
+    /**
+     * Displays a single Equipment model.
+     * @param integer $id
+     * @return mixed
+     */
+    public function actionView($id) {
+
+        if (!isset(Yii::$app->user->id)) {
+            return $this->redirect(['/site/login']);
+        } elseif (Yii::$app->user->identity->user_type == 'farm-admin') {
+
+            $this->layout = 'mainsubadmin';
+            return $this->render('view', [
+                        'model' => $this->findModel($id),
+            ]);
+        }
+    }
+
+    public function actionDelete($id) {
+        $this->findModel($id)->delete();
+        Yii::$app->session->setFlash('delete', true);
+        return $this->redirect(['index']);
+    }
+
+    protected function findModel($id) {
+        $model = Equipment::findOne($id);
+        if ($model !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+    
+     protected function findirrigationModel($id) {
+
+        if (($model = Irrigationsystem::find()->where(['fkFieldID'=>$id])->all()) !== null) {
+            return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+//    public function actionDownload() {
+//
+//        $path=Yii::$app->request->baseUrl . '/uploaded_files/' . 'water_chart/' . $_GET['fileName']; 
+//        header("Content-disposition: attachment; filename=" . $path);
+//        header("Content-type: application/pdf");
+//        readfile($path);
+//    }
+}

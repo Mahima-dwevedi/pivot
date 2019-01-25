@@ -1,0 +1,10 @@
+@charset "utf-8";
+/* CSS Document */
+.post span{ color:#839098 !important}
+.breadcrumbs li.selected{color:#839098 !important}
+.view{ background:#839098!important; border-bottom:2px solid #6a7d89!important}
+.services_dropdown{ background:#839098!important}
+.nav ul.main_menu > li > a.active{background:#839098 !important}
+.latest_jobs ul li{background:url(../../../img/front/pages/grey/latest-list-icon.png) no-repeat 8px center!important}
+.sitemap{background:url(../../../img/front/pages/grey/sitemap-btn.png) no-repeat 0 0!important}
+.reg span{color:#839098 !important}

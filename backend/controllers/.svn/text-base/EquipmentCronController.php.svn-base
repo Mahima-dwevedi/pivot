@@ -1,0 +1,114 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use yii\web\Controller;
+use backend\models\Equipment;
+use backend\models\EquipmentNotification;
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ * Description of EquipmentCronController
+ *
+ * @author vinove
+ */
+class EquipmentCronController extends Controller {
+
+    public function actionIndex() {
+        $con = \Yii::$app->db;
+        $query = "select * from (SELECT * FROM `EquipmentMeta` where DATE_ADD(now(), INTERVAL 5 MINUTE) >=`ScheduledStopTime` and `ScheduledStopTime`>=now() order by id desc )  temp group by temp.fkEquipmentID";
+        $equipMeta = $con->createCommand($query)->queryAll();
+
+        if ($equipMeta) {
+
+            foreach ($equipMeta as $value) {
+                $eqipNoti = new EquipmentNotification;
+                $eq = Equipment::findOne($value['fkEquipmentID']);
+                if ($eq['EqpStatus'] == "1") {
+                    Equipment::stopEqipment($value['pkEquipmentID']);
+                    $eqipNoti->EquipmentNotificationMessage = "Equipment(" . $eq['EquipmentName'] . ") to be stoped at " . $value['ScheduledStopTime'] . ".";
+                    $eqipNoti->fkEquipmentID = $value['fkEquipmentID'];
+                    $eqipNoti->EquipmentNotificationStatus = 1;
+                    $eqipNoti->EquipmentNotificationSendTime = date('Y-m-d H:i:s');
+                    $eqipNoti->save();
+                }
+            }
+        }
+
+        $query = "SELECT * from (SELECT `EquipmentMeta`.*,`tbl_device`.DeviceSerialNo FROM `EquipmentMeta` "
+                . " inner join  `tbl_equipment` on  `tbl_equipment`.pkEquipmentID=`EquipmentMeta`.fkEquipmentID"
+                . " inner join `tbl_device` on `tbl_device`.	pkDeviceID=`tbl_equipment`.fkDeviceID"
+                . " order by id desc )  temp group by temp.fkEquipmentID";
+        $equipMetaSlotInStop = $con->createCommand($query)->queryAll();
+
+        if ($equipMetaSlotInStop) {
+            foreach ($equipMetaSlotInStop as $value_stop_in_slot) {
+
+                if ($value_stop_in_slot['PivotStopAction'] == "1") {
+
+                    $deviceStopSlot = abs($value_stop_in_slot['StopandSlot']);
+                    $deviceSerialNo = $value_stop_in_slot['DeviceSerialNo'];
+                    $eq1 = Equipment::findOne($value_stop_in_slot['fkEquipmentID']);
+
+                    if ($deviceStopSlot != "" && $deviceSerialNo != "" && $value_stop_in_slot["PivotStopAction"] == "1") {
+
+                        $pivotSummary = new \backend\models\PivotSummary;
+                        $lastCheckins = $pivotSummary->getCheckIn($deviceSerialNo);
+
+                        if (count($lastCheckins) > 0) {
+                            if (($deviceStopSlot - 1) <= $lastCheckins['pivotHeading']) {
+                                $eqipNoti = new EquipmentNotification;
+                                Equipment::stopEqipment($value_stop_in_slot['fkEquipmentID']);
+                                $eqipNoti->EquipmentNotificationMessage = "Equipment(" . $eq1->EquipmentName . ") to be stoped at " . $value_stop_in_slot['StopandSlot'] . ".";
+                                $eqipNoti->fkEquipmentID = $value_stop_in_slot['fkEquipmentID'];
+                                $eqipNoti->EquipmentNotificationStatus = 1;
+                                $eqipNoti->EquipmentNotificationSendTime = date('Y-m-d H:i:s');
+                                $eqipNoti->save();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function actionCheckAlert() {
+       
+        $pivotSummary = new \backend\models\PivotSummary;
+        $allDevice = \backend\models\Device::find()->select("DeviceSerialNo,pkDeviceID")->asArray()->all();
+        foreach ($allDevice as $deviceValue) {
+            $pressure = $pivotSummary->getCheckIn($deviceValue['DeviceSerialNo']);
+            if ($pressure['pressure'] != '') {
+                $deviceAllRecord = $pivotSummary->getLastToday($deviceValue['DeviceSerialNo']);
+                if (count($deviceAllRecord) >= 2) {
+                    $moveNoPressure = $pivotSummary->getAlarmMoveNoPressure($deviceValue["DeviceSerialNo"], $deviceAllRecord[0]["pressure"]);
+                    $noMovePressure = $pivotSummary->getAlarmMovePressure($deviceValue["DeviceSerialNo"], $deviceAllRecord[0]["pressure"]);
+                    if ($moveNoPressure == "Yes" || $noMovePressure == "Yes") {
+                        $allEquipment = Equipment::find()->select("pkEquipmentID,EquipmentName,EqpStatus")->where(["fkDeviceID" => $deviceValue['pkDeviceID']])->asArray()->all();
+                        if ($allEquipment) {
+                            foreach ($allEquipment as $eqipValue) {
+                                if ($eqipValue['EqpStatus'] == "1") {
+                                    $eqipNoti = new EquipmentNotification;
+                                    Equipment::stopEqipment($eqipValue['pkEquipmentID']);
+                                    $eqipNoti->EquipmentNotificationMessage = "Equipment(" . $eqipValue['EquipmentName'] . ") to be stoped due to alert.";
+                                    $eqipNoti->fkEquipmentID = $eqipValue['pkEquipmentID'];
+                                    $eqipNoti->EquipmentNotificationStatus = 1;
+                                    $eqipNoti->EquipmentNotificationSendTime = date('Y-m-d H:i:s');
+                                    $eqipNoti->save();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+?>

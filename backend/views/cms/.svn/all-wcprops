@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms
+END
+view.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/view.php
+END
+_form.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/_form.php
+END
+update.php
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/update.php
+END
+create.php
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/create.php
+END
+_search.php
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/_search.php
+END
+index.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/pivot_new/!svn/ver/2/system/branches/development/src/site/backend/views/cms/index.php
+END

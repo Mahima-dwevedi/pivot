@@ -1,0 +1,23 @@
+html{-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;}
+
+.banner_btn li a,.view,.reset,.signup,.emp_register,.seeker_register,.company li input[type="text"], .contact li input[type="text"],.contact li input[type="url"], .form_bottom p input[type="password"],.admin,.demand_reset,.left_demand ul li a,.left_demand ul li a:hover,.left_demand ul li a.active,.employer_view,.seeker_reset,.seeker_submit,.form_left li input[type="text"],.form_right li input[type="text"], .form_right li input[type="password"],.form_right input#uploadFile,.select_box,.category_box,.form_left li .dm_box,.form_left li .year_box,.form_left li input[type="password"],.apply,.register_img,.view_jobs,.date_range input,.category input,.manage_admin,.passport_form li input[type="text"],.visa_btn,.register,.click_here,.employer_register,.employer_contact ul li input,.employer_contact ul li textarea,.contact-form textarea,.contact-form input,.company li input[type="url"] {-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;behavior:url(common/js/PIE.htc);position:relative;}
+
+.video_container,.post,.reg,.employer_form,.seeker_form,.left_demand,.fileUpload span,.tab_body input#uploadFile,.tab_body input#uploadFile1,.tab_body textarea,.employer,.job_result,.register_here,.employer_contact,.visa p,.acc_heading h3,.acc_content .answer,input.uploadFile,input.uploadFileNew{-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;behavior:url(common/js/PIE.htc);position:relative;}
+
+.ui-tabs .ui-tabs-nav li a{-webkit-border-radius:5px 5px 0 0;-moz-border-radius:5px 5px 0 0;border-radius:5px 5px 0 0;behavior:url(common/js/PIE.htc);position:relative;}
+
+.tab_body{-webkit-border-radius:0 0 5px 5px;-moz-border-radius:0 0 5px 5px;border-radius:0 0 5px 5px;behavior:url(common/js/PIE.htc);position:relative;}
+.owl-theme .owl-controls .owl-page span{-webkit-border-radius:20px;-moz-border-radius:20px;border-radius:20px;behavior:url(common/js/PIE.htc);position:relative;}
+
+.input_box{-webkit-box-shadow:0px 2px 0px 0px #d0d0d0;-moz-box-shadow:0px 2px 0px 0px #d0d0d0;box-shadow:0px 2px 0px 0px #d0d0d0;-webkit-border-radius:45px;-moz-border-radius:45px;border-radius:45px;behavior:url(common/js/PIE.htc);position:relative;}
+.result_page .input_box{-webkit-box-shadow:0px 1px 0px 0px #c6c6c6;-moz-box-shadow:0px 1px 0px 0px #c6c6c6;box-shadow:0px 1px 0px 0px #c6c6c6;behavior:url(common/js/PIE.htc);position:relative;}
+.search_box{-webkit-box-shadow:0px 1px 1px 0px #bcbcbc;-moz-box-shadow:0px 1px 1px 0px #bcbcbc;box-shadow:0px 1px 1px 0px #bcbcbc;-webkit-border-radius:45px;-moz-border-radius:45px;border-radius:45px;behavior:url(common/js/PIE.htc);position:relative;}
+.input_box input{border-radius:45px;behavior:url(common/js/PIE.htc);position:relative;}
+
+.fileUpload input.upload {	filter: alpha(opacity=0);}
+.input_box input{-webkit-font-smoothing: antialiased;}
+.tab_body_top_border{border-top:1px solid #DBDBDB; border-radius:5px 5px 5px 5px !important;}
+.multiUploadDiv{margin-top:10px;}
+
+
+

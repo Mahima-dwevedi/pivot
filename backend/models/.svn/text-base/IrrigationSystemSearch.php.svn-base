@@ -1,0 +1,110 @@
+<?php
+
+namespace app\models;
+
+use Yii;
+use yii\base\Model;
+use yii\data\ActiveDataProvider;
+use backend\models\Irrigationsystem;
+
+//echo "afssa";
+/**
+ * IrrigationSystemSearch represents the model behind the search form about `backend\models\Irrigationsystem`.
+ */
+class IrrigationSystemSearch extends Irrigationsystem {
+
+    /**
+     * @inheritdoc
+     */
+    public function rules() {
+        return [
+            [['irrigationID', 'fkFarmID', 'fkParentID'], 'integer'],
+            [['irrigationName', 'irrigationAddedDate', 'irrigationUpdatedDate'], 'safe'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function scenarios() {
+        // bypass scenarios() implementation in the parent class
+        return Model::scenarios();
+    }
+
+    /**
+     * Creates data provider instance with search query applied
+     *
+     * @param array $params
+     *
+     * @return ActiveDataProvider
+     */
+    public function search($params) {
+        
+         if (Yii::$app->user->identity->Adminlevel == '0') { // Condition to check field according to level Date:5-8-2015
+             
+        $query = Irrigationsystem::find()->where(['tbl_irrigation.fkParentID' =>Yii::$app->user->id]);
+        $query->joinWith('field');
+
+        } else {
+            
+        $query = Irrigationsystem::find()->where(['tbl_irrigation.fkParentID' =>Yii::$app->user->identity->fkUserID]);
+        $query->joinWith('field');
+
+        }
+//        $query = Irrigationsystem::find()->where(['tbl_irrigation.fkParentID' =>198]);
+//        $query->joinWith('field');
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+        ]);
+//        echo "<pre>";
+//        print_r($params);
+//        die;
+        if (!($this->load($params) && $this->validate())) {
+            return $dataProvider;
+        }
+
+        if (@$params['IrrigationSystemSearch']['fkFieldID'] != '') {
+//die('afs');
+            $query->andFilterWhere(['like', 'fieldName', $params['IrrigationSystemSearch']['fkFieldID']]);
+            $this->fkFieldID = $params['IrrigationSystemSearch']['fkFieldID'];
+        }
+
+        $query->andFilterWhere([
+            'irrigationID' => $this->irrigationID,
+//            'fkFieldID' => $this->fkFieldID,
+            'irrigationAddedDate' => $this->irrigationAddedDate,
+            'irrigationUpdatedDate' => $this->irrigationUpdatedDate,
+            'fkFarmID' => $this->fkFarmID,
+            'fkParentID' => $this->fkParentID,
+        ]);
+
+        $query->andFilterWhere(['like', 'irrigationName', $this->irrigationName]);
+
+        return $dataProvider;
+    }
+
+    public function getSearchIrrigationList() {
+        $array = [];
+
+        $model = Irrigationsystem::find()->select('irrigationName')->asArray()->all();
+
+        foreach ($model as $value) {
+            array_push($array, $value['irrigationName']);
+        }
+        return $array;
+    }
+
+    public function getSearchFieldList() {
+        $array = [];
+        $con=  Yii::$app->db;
+        $query = "SELECT `tbl_field`.fieldName  FROM `tbl_field`" 
+                 ." inner join tbl_irrigation on  tbl_irrigation.`fkFieldID`=`tbl_field`.fieldID ";
+        $model = $con->createCommand($query)->queryAll();
+        foreach ($model as $value) {
+            array_push($array, $value['fieldName']);
+        }
+        return $array;
+    }
+
+}
